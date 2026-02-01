@@ -3,7 +3,7 @@
    ============================================================ */
 console.log("⚙️ Loading Configuration...");
 
-const API_BASE_URL = "https://nexusgrid-api.onrender.com"; 
+window.API_BASE_URL = "https://nexusgrid-api.onrender.com";
 
 // Socket.io connection (Attached to window for global access)
 // ⚠️ CHANGE THIS URL to your Render Link
