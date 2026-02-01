@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | NexusGrid</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 500: '#0ea5e9', 600: '#0284c7' }, // Electric Blue
+                        dark: { 950: '#020617', 900: '#0f172a' }
+                    },
+                    animation: { 'blob': 'blob 10s infinite' },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #020617; color: #cbd5e1; }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
+            outline: none;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center overflow-hidden relative">
+
+    <div class="absolute inset-0 w-full h-full">
+        <div class="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[100px] animate-blob"></div>
+        <div class="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+    </div>
+
+    <div class="relative w-full max-w-md p-8 glass-card rounded-2xl mx-4">
+        
+        <div class="text-center mb-10">
+            <a href="/" class="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
+                <div class="w-8 h-8 bg-brand-600 rounded flex items-center justify-center text-white font-bold shadow-lg shadow-brand-500/30">N</div>
+                <span class="text-xl font-bold text-white tracking-tight">NEXUS<span class="text-brand-500">GRID</span></span>
+            </a>
+            <h1 class="text-2xl font-bold text-white mb-2">Welcome Back</h1>
+            <p class="text-sm text-slate-500">Sign in to access your industrial dashboard.</p>
+        </div>
+     <div id="login-error-msg" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center"></div>
+        <form id="login-page-form" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Work Email</label>
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-3 top-3 w-5 h-5 text-slate-500"></i>
+                    <input type="email" id="email" required placeholder="name@company.com" 
+                        class="w-full input-field rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-600">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Password</label>
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-slate-500"></i>
+                    <input type="password" id="password" required placeholder="••••••••" 
+                        class="w-full input-field rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-600">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-sm">
+                <label class="flex items-center gap-2 text-slate-400 cursor-pointer">
+                    <input type="checkbox" class="rounded border-slate-700 bg-slate-800 text-brand-500 focus:ring-0">
+                    <span>Remember me</span>
+                </label>
+                 <a href="#" onclick="goToReset()" class="text-brand-500 hover:text-brand-400 font-medium transition-colors">
+                  Forgot Password?
+                 </a>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                Sign In
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </form>
+
+        <div class="mt-8 text-center border-t border-slate-800 pt-6">
+            <p class="text-sm text-slate-500">
+                Don't have an account? 
+                <a href="/signup.html" class="text-white font-bold hover:text-brand-500 transition-colors">Start Free Trial</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('login-page-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-btn');
+            const originalText = btn.innerHTML;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // 1. Loading State
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Authenticating...`;
+            lucide.createIcons(); // Refresh icons for the spinner
+
+            try {
+                // 2. Deployment-Ready Fetch (Relative Path)
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // 3. Success State
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userRole', data.role); // Optional: Store role
+                    
+                    btn.classList.remove('bg-brand-600');
+                    btn.classList.add('bg-green-600');
+                    btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> Success`;
+                    lucide.createIcons();
+
+                    // 4. Redirect based on Role (Optional smart redirect)
+                    setTimeout(() => {
+                        if(data.role === 'admin') {
+                            window.location.href = '/admin-dashboard.html';
+                        } else {
+                            window.location.href = '/dashboard.html';
+                        }
+                    }, 800);
+
+                } else {
+                    throw new Error(data.error || 'Invalid credentials');
+                }
+
+            } catch (err) {
+                // 5. Error State (Professional UI)
+    const errorBox = document.getElementById('login-error-msg');
+    errorBox.classList.remove('hidden');
+    errorBox.innerHTML = `<i data-lucide="alert-circle" class="inline w-4 h-4 mr-1"></i> ${err.message}`;
+    lucide.createIcons(); // Refresh the alert icon
+
+    // Reset Button
+    btn.disabled = false;
+    btn.classList.remove('bg-green-600');
+    btn.classList.add('bg-brand-600');
+    btn.innerHTML = originalText;
+    lucide.createIcons();
+            }
+        });
+    function goToReset() {
+    // 1. Get the value currently in the email box
+    const emailVal = document.getElementById('email').value;
+    
+    // 2. Build the URL with the email attached (e.g. ?email=admin@test.com)
+    let targetUrl = '/forgot-password.html';
+    if (emailVal) {
+        targetUrl += `?email=${encodeURIComponent(emailVal)}`;
+    }
+    
+    // 3. Go there
+    window.location.href = targetUrl;
+}
+    </script>
+</body>
+</html>

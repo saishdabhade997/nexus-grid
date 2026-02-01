@@ -1,0 +1,3558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NexusGrid | Enterprise Energy Management Platform</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+ <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    // Immediate Security Check
+    (function() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn("Unauthorized access detected. Redirecting to login...");
+            window.location.href = '/index.html'; // Adjust path if your login file is named differently
+        }
+    })();
+</script>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body { 
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+        color: #e2e8f0;
+        overflow: hidden;
+        margin: 0;
+    }
+
+    /* ===== PREMIUM GLASS CARDS ===== */
+    .glass-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 
+                    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 48px 0 rgba(0, 0, 0, 0.6),
+                    0 0 0 1px rgba(59, 130, 246, 0.2),
+                    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+        border-color: rgba(59, 130, 246, 0.3);
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 23, 42, 0.75) 100%);
+    }
+     /* Force proper light calendar popup on dark UI */
+input[type="date"] {
+    color-scheme: light;
+}
+/* Add this to your style block to ensure the footer stays visible */
+.tab-content {
+    height: calc(100vh - 64px); /* Subtract Header height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* This forces the table to scroll, not the page */
+}
+/* Keep your input text dark-ui friendly */
+input[type="date"] {
+    background-color: rgba(30, 41, 59, 0.5);
+    color: white;
+}
+/* Ensure the footer has enough presence */
+#page-indicator {
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Make the buttons feel like real industrial controls */
+#prev-page-btn, #next-page-btn {
+    letter-spacing: 1.5px;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Critical: Ensure the parent container doesn't hide this */
+.audit-card-main {
+    margin-bottom: 2rem !important; /* Forces breathing room at the bottom */
+}
+
+/* High Visibility for Range Numbers */
+#current-range {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+/* Calendar icon visibility */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+    /* ===== SIDEBAR STYLING ===== */
+    aside {
+        background: linear-gradient(180deg, #0f1629 0%, #1a1f3a 50%, #0f1629 100%);
+        border-right: 1px solid rgba(59, 130, 246, 0.15);
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.6);
+    }
+
+    /* ===== NAVIGATION ITEMS ===== */
+    .nav-item {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #94a3b8;
+    }
+    
+    .nav-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        background: linear-gradient(180deg, #3b82f6, #06b6d4);
+        transform: scaleY(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .nav-item:hover {
+        background: rgba(59, 130, 246, 0.12);
+        color: #e2e8f0;
+        padding-left: 20px;
+    }
+    
+    .nav-item:hover::before {
+        transform: scaleY(1);
+    }
+    
+    .nav-item.active {
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.05) 100%);
+        color: #60a5fa;
+        border-left: 3px solid #3b82f6;
+        font-weight: 600;
+        box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+
+    /* ===== PREMIUM SCROLLBAR ===== */
+    ::-webkit-scrollbar { 
+        width: 10px; 
+        height: 10px; 
+    }
+    
+    ::-webkit-scrollbar-track { 
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb { 
+        background: linear-gradient(180deg, #3b82f6 0%, #06b6d4 100%);
+        border-radius: 10px;
+        border: 2px solid rgba(15, 23, 42, 0.6);
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #60a5fa 0%, #22d3ee 100%);
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h1, h2, h3, .metric-value { 
+        font-weight: 700;
+        letter-spacing: -0.025em;
+    }
+    
+    .font-mono {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* ===== TAB SYSTEM ===== */
+    .tab-btn { 
+        padding: 12px 26px;
+        border-radius: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+    }
+    
+    .tab-btn:hover { 
+        color: #e2e8f0;
+        background: rgba(59, 130, 246, 0.12);
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .tab-btn.active { 
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 24px rgba(59, 130, 246, 0.5);
+        border-color: transparent;
+    }
+    
+    /* ===== TAB CONTENT ===== */
+    .tab-content { 
+        display: none;
+        animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        height: calc(100vh - 64px);
+        overflow-y: auto;
+        padding-bottom: 4rem;
+    }
+    
+    .tab-content.active { 
+        display: block; 
+    }
+    
+    @keyframes fadeInUp {
+        from { 
+            opacity: 0; 
+            transform: translateY(20px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+
+    /* ===== LOADING SKELETON ===== */
+    .skeleton {
+        background: linear-gradient(90deg, 
+            rgba(30, 41, 59, 0.4) 25%, 
+            rgba(51, 65, 85, 0.6) 50%, 
+            rgba(30, 41, 59, 0.4) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-pulse 2s ease-in-out infinite;
+        color: transparent !important;
+        border-radius: 8px;
+    }
+    
+    @keyframes skeleton-pulse {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* ===== STATUS BADGES ===== */
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 24px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* ===== GRADIENT TEXT ===== */
+    .gradient-text {
+        background: linear-gradient(135deg, #60a5fa 0%, #06b6d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ===== PREMIUM INPUTS ===== */
+    input[type="date"],
+    input[type="time"],
+    input[type="number"],
+    input[type="text"],
+    select {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: #e2e8f0;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+    }
+    
+    input:focus,
+    select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        background: rgba(15, 23, 42, 0.9);
+    }
+
+    /* ===== PREMIUM BUTTONS ===== */
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.6);
+        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    /* ===== HEATMAP GRID ===== */
+    .grid-cols-24 {
+        display: grid;
+        grid-template-columns: repeat(24, minmax(0, 1fr));
+        gap: 3px;
+    }
+    
+    #heatmap-grid > div {
+        aspect-ratio: 1 / 1;
+        min-width: 14px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    /* ===== CONNECTION STATUS ===== */
+    .status-online {
+        animation: pulse-glow 2.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+        0%, 100% { 
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); 
+        }
+        50% { 
+            box-shadow: 0 0 24px rgba(34, 197, 94, 0.9); 
+        }
+    }
+
+    /* ===== PREMIUM TABLE ===== */
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    table thead {
+        background: linear-gradient(135deg, 
+            rgba(15, 23, 42, 0.98) 0%, 
+            rgba(30, 41, 59, 0.98) 100%);
+        backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    table tbody tr {
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    table tbody tr:hover {
+        background: rgba(59, 130, 246, 0.08);
+        transform: scale(1.01);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ===== SECTION TITLE ===== */
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #64748b;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+    }
+
+    /* ===== CUSTOM ANIMATIONS ===== */
+    @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* ===== ALARM SLIDER ===== */
+    #alarm-nav-slider {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ===== RESPONSIVE UTILITIES ===== */
+    @media (max-width: 768px) {
+        aside { width: 100%; max-width: 280px; }
+        .glass-card { padding: 1rem !important; }
+    }
+    /* Ensure tab content takes full remaining height and is scrollable */
+.tab-content {
+    display: none; /* Default hidden */
+    height: calc(100vh - 64px); /* Subtract header height */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 5rem; /* Massive padding to prevent bottom clipping */
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+/* Explicitly show active tab and isolate it */
+.tab-content.active {
+    display: block !important;
+}
+
+/* Fix for the glass-card to prevent z-index issues during hover */
+.glass-card {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    z-index: 50; /* Bring to front on hover */
+}
+
+/* Scrollbar styling to keep it slim and non-intrusive */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+}
+/* Enhanced Custom Scrollbar for Tables */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.5) rgba(15, 23, 42, 0.8);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.6);
+    border-radius: 10px;
+    border: 2px solid rgba(15, 23, 42, 0.8);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.9);
+}
+/* Pagination Button States */
+button:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.3 !important;
+    pointer-events: none;
+}
+
+button:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+
+button:not(:disabled):active {
+    transform: translateY(0);
+}
+</style>
+</head>
+
+<body class="flex h-screen text-gray-100">
+
+  <aside class="w-64 bg-[#0f1115] border-r border-gray-800 flex flex-col shrink-0 z-20">
+    <div class="p-6 flex items-center gap-3">
+        <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/50">N</div>
+        <h1 class="text-2xl font-bold tracking-wider text-white">KILL<span class="text-blue-500">STACK</span></h1>
+    </div>
+    
+<nav class="flex-1 px-4 space-y-8 mt-8">
+    <div class="pt-2 pb-2">
+    <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Management</p>
+     <button onclick="showTab(event, 'profile')" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Profile & Billing</button>
+</div>
+    <div>
+        <p class="text-[10px] font-bold text-gray-500 uppercase px-4 mb-2 tracking-widest">Intelligence</p>
+        <button onclick="showTab(event, 'overview')" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Real-time Console</button>
+        <button onclick="showTab(event, 'analytics')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all">Trend Analytics</button>
+    </div>
+
+    <div>
+        <p class="text-[10px] font-bold text-gray-500 uppercase px-4 mb-2 tracking-widest">Operations</p>
+        <button onclick="showTab(event, 'Reports')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all">Audit Logs</button>
+        <button onclick="showTab(event, 'alarms')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Active Alarms</button>
+        <button onclick="showTab(event, 'assets')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Asset Manager</button>
+    </div>
+
+    <div>
+        <p class="text-[10px] font-bold text-gray-500 uppercase px-4 mb-2 tracking-widest">Financials</p>
+        <button onclick="showTab(event, 'financials')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Billing Engine</button>
+        <button onclick="showTab(event, 'tariffs')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"> Tariff Config</button>
+    </div>
+</nav>
+
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 px-4 py-2 rounded-lg transition-all text-sm font-semibold">
+    Log Out
+</button>
+    </div>
+  </aside>
+
+ <main class="flex-1 flex flex-col relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black">
+    
+    <header class="h-16 border-b border-gray-800/50 bg-gray-900/50 backdrop-blur-md flex items-center justify-between px-8 z-10">
+        <div class="flex items-center gap-4">
+            <span class="p-2 bg-gray-800 rounded-lg text-gray-400"></span>
+            <div>
+                <p class="text-[10px] text-gray-500 font-bold uppercase">Selected Plant</p>
+                <select class="bg-transparent text-sm font-bold text-white outline-none cursor-pointer">
+                    <option>Factory A (Main Unit)</option>
+                    <option>Factory B (Remote)</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-700">
+            <div id="conn-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+            <span id="conn-text" class="text-xs font-mono text-green-400">SYSTEM ONLINE</span>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-8 relative">
+<div id="profile" class="tab-content">
+    <div class="flex flex-col gap-8 pb-20">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-8 glass-card p-8 border-l-4 border-blue-500 bg-gradient-to-r from-blue-500/5 to-transparent flex flex-col md:flex-row items-center gap-8">
+                <div class="w-24 h-24 rounded-2xl bg-blue-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-blue-500/20">
+                    A
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h2 class="text-3xl font-black text-white uppercase tracking-tighter">Admin <span class="text-blue-500">User</span></h2>
+                    <p class="text-sm text-gray-400 font-mono">Organization ID: NEX-IND-9922</p>
+                    <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+                        <span class="px-3 py-1 bg-green-500/10 text-green-500 text-[9px] font-black rounded-full border border-green-500/20 uppercase">Account Active</span>
+                        <span id="current-plan-badge" class="px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded-full uppercase">Plan: Essential</span>
+                    </div>
+                </div>
+                <button class="bg-gray-800 hover:bg-white/5 text-white text-[10px] font-black px-6 py-3 rounded-xl border border-gray-700 uppercase tracking-widest transition-all">
+                    Edit Profile
+                </button>
+            </div>
+
+            <div class="lg:col-span-4 glass-card p-6 border-l-4 border-orange-500 bg-orange-500/5 flex flex-col justify-between">
+                <div>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Subscription Status</p>
+                    <h3 id="expiry-status" class="text-lg font-bold text-white mt-1">Life-time Free</h3>
+                </div>
+                
+                <div id="expiry-details" class="mt-4 hidden">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold">Expires On</span>
+                        <span id="expiry-date" class="text-sm font-mono text-orange-400 font-bold">--/--/----</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="expiry-progress" class="bg-orange-500 h-full w-full"></div>
+                    </div>
+                    <p id="days-left" class="text-[9px] text-gray-500 mt-2 uppercase font-bold">Valid for 30 more days</p>
+                </div>
+
+                <button onclick="document.getElementById('pricing-grid').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 border border-gray-700 rounded-lg text-[9px] font-black text-white uppercase transition-all">
+                    Manage Subscription
+                </button>
+            </div>
+        </div>
+
+        <div id="pricing-grid">
+            <div class="mb-6 border-b border-white/5 pb-4">
+                <h3 class="text-sm font-bold text-white uppercase tracking-widest">Available Subscriptions</h3>
+                <p class="text-[10px] text-gray-500 uppercase mt-1">Upgrade your factory to unlock Enterprise features</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="glass-card p-6 border border-gray-800 relative opacity-70 hover:opacity-100 transition-all">
+                    <h4 class="text-lg font-bold text-gray-400 uppercase">Essential</h4>
+                    <p class="text-[9px] text-gray-500 mb-4 uppercase">Free for Small Units</p>
+                    <h2 class="text-3xl font-black text-white">₹ 0</h2>
+                    <ul class="mt-6 space-y-2 text-[10px] text-gray-400 font-bold uppercase">
+                        <li>• Real-time Monitoring</li>
+                        <li>• 24-Hour Data Retention</li>
+                        <li>• Single User Access</li>
+                    </ul>
+                    <button disabled class="mt-6 w-full py-3 bg-gray-800 text-gray-500 text-[9px] font-black rounded-lg uppercase cursor-not-allowed">Current Plan</button>
+                </div>
+
+                <div class="glass-card p-6 border-2 border-blue-600 bg-blue-600/5 relative overflow-hidden transform hover:-translate-y-1 transition-all duration-300">
+                    <div class="absolute top-0 right-0 bg-blue-600 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest">Recommended</div>
+                    <h4 class="text-lg font-bold text-white uppercase">Industrial Pro</h4>
+                    <p class="text-[9px] text-blue-400 mb-4 uppercase">For Scalable Factories</p>
+                    <h2 class="text-3xl font-black text-white">₹ 4,999 <span class="text-xs text-gray-500">/mo</span></h2>
+                    <ul class="mt-6 space-y-2 text-[10px] text-gray-300 font-bold uppercase">
+                        <li>• <span class="text-blue-400">30-Day</span> Data History</li>
+                        <li>• Advanced Harmonics (THD)</li>
+                        <li>• PDF Compliance Reports</li>
+                        <li>• Email Alarm Alerts</li>
+                    </ul>
+                    <button onclick="openPaymentPortal('PRO', 4999)" class="mt-6 w-full py-3 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all">Upgrade Account</button>
+                </div>
+
+                <div class="glass-card p-6 border border-purple-500/30 bg-purple-500/5 hover:border-purple-500/60 transition-all">
+                    <h4 class="text-lg font-bold text-purple-400 uppercase">Enterprise</h4>
+                    <p class="text-[9px] text-gray-500 mb-4 uppercase">Multi-Plant Support</p>
+                    <h2 class="text-3xl font-black text-white">₹ 14,999 <span class="text-xs text-gray-500">/mo</span></h2>
+                    <ul class="mt-6 space-y-2 text-[10px] text-gray-400 font-bold uppercase">
+                        <li>• <span class="text-purple-400">Unlimited</span> Cloud Storage</li>
+                        <li>• Multi-Plant Dashboard</li>
+                        <li>• Dedicated Support Engineer</li>
+                        <li>• Custom Tariff Logic</li>
+                    </ul>
+                    <button onclick="openPaymentPortal('ENTERPRISE', 14999)" class="mt-6 w-full py-3 border border-purple-500/50 text-purple-400 text-[9px] font-black rounded-lg uppercase hover:bg-purple-600 hover:text-white transition-all">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="payment-portal" class="hidden glass-card p-10 border-t-4 border-green-500 bg-[#020617] shadow-2xl animate-fadeIn mt-8">
+            <div class="flex justify-between items-start mb-8 border-b border-gray-800 pb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white uppercase tracking-tight">Secure Checkout</h3>
+                    <p class="text-xs text-gray-500 mt-1">Activating: <span id="checkout-plan-name" class="text-green-500 font-bold text-sm">---</span></p>
+                </div>
+                <button onclick="document.getElementById('payment-portal').classList.add('hidden')" class="text-gray-500 hover:text-white text-xl font-bold">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="space-y-5">
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 uppercase">Cardholder Name</label>
+                        <input type="text" placeholder="John Doe" class="w-full mt-1 bg-gray-900 border border-gray-700 p-3 rounded-xl text-sm text-white focus:border-green-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 uppercase">Card Number</label>
+                        <input type="text" placeholder="0000 0000 0000 0000" class="w-full mt-1 bg-gray-900 border border-gray-700 p-3 rounded-xl text-sm text-white focus:border-green-500 outline-none transition-colors">
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="w-1/2">
+                            <label class="text-[9px] font-bold text-gray-500 uppercase">Expiry</label>
+                            <input type="text" placeholder="MM/YY" class="w-full mt-1 bg-gray-900 border border-gray-700 p-3 rounded-xl text-sm text-white focus:border-green-500 outline-none transition-colors">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-[9px] font-bold text-gray-500 uppercase">CVC</label>
+                            <input type="text" placeholder="123" class="w-full mt-1 bg-gray-900 border border-gray-700 p-3 rounded-xl text-sm text-white focus:border-green-500 outline-none transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/50 p-6 rounded-2xl flex flex-col justify-between border border-white/5">
+                    <div>
+                        <div class="flex justify-between items-center text-gray-400 text-sm mb-2">
+                            <span>Subtotal</span>
+                            <span id="checkout-price-sub" class="text-white font-mono">₹ 0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-400 text-sm mb-4 border-b border-gray-800 pb-4">
+                            <span>Tax (18%)</span>
+                            <span class="text-white font-mono">Included</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-white font-bold uppercase">Total Due</span>
+                            <span id="checkout-price" class="text-3xl font-black text-green-500 font-mono">₹ 0.00</span>
+                        </div>
+                    </div>
+                    <button onclick="processUpgrade()" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-xl uppercase tracking-widest shadow-lg shadow-green-600/20 transition-all mt-6 transform active:scale-95">
+                        Confirm Payment
+                    </button>
+                    <p class="text-[8px] text-gray-600 text-center mt-3 uppercase font-bold">256-Bit SSL Encrypted Transaction</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>        
+<div id="overview" class="tab-content active">
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-card p-6 text-center border-t-4 border-t-blue-500">
+      <h3 class="text-xs font-bold text-gray-400 uppercase mb-1">Avg L-N Voltage</h3>
+      <h2 id="voltage_ln_avg" class="text-3xl font-bold skeleton">-- V</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-blue-500">
+      <h3 class="text-xs font-bold text-gray-400 uppercase mb-1">Avg L-L Voltage</h3>
+      <h2 id="voltage_ll_avg" class="text-3xl font-bold skeleton">-- V</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-indigo-500">
+      <h3 class="text-xs font-bold text-gray-400 uppercase mb-1">Grid Frequency</h3>
+      <h2 id="frequency" class="text-3xl font-bold skeleton">-- Hz</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-green-500">
+      <h3 class="text-xs font-bold text-gray-400 uppercase mb-1">Voltage Imbalance</h3>
+      <h2 id="v_imbalance" class="text-3xl font-bold skeleton">-- %</h2>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="glass-card p-6">
+      <h3 class="text-sm font-bold text-gray-400 mb-4 uppercase">Phase-to-Neutral Voltages</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="text-center"><p class="text-xs text-red-400 font-bold">R-N</p><p id="voltage_r" class="text-xl font-bold skeleton">-- V</p></div>
+        <div class="text-center"><p class="text-xs text-yellow-400 font-bold">Y-N</p><p id="voltage_y" class="text-xl font-bold skeleton">-- V</p></div>
+        <div class="text-center"><p class="text-xs text-blue-400 font-bold">B-N</p><p id="voltage_b" class="text-xl font-bold skeleton">-- V</p></div>
+      </div>
+      <div class="text-center mt-2 border-t border-white/5 pt-2">
+        <span class="text-xs text-gray-400 font-bold">AVG L-N</span>
+        <p id="voltage_ln_avg_disp" class="text-xl font-bold skeleton">-- V</p>
+      </div>
+    </div>
+
+    <div class="glass-card p-6">
+      <h3 class="text-sm font-bold text-gray-400 mb-4 uppercase">RMS Current & Neutral</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="text-center"><p class="text-xs text-red-400 font-bold">Phase R</p><p id="current_r" class="text-xl font-bold skeleton">-- A</p></div>
+        <div class="text-center"><p class="text-xs text-yellow-400 font-bold">Phase Y</p><p id="current_y" class="text-xl font-bold skeleton">-- A</p></div>
+        <div class="text-center"><p class="text-xs text-blue-400 font-bold">Phase B</p><p id="current_b" class="text-xl font-bold skeleton">-- A</p></div>
+        <div class="text-center"><p class="text-xs text-cyan-400 font-bold">Neutral</p><p id="current_n" class="text-xl font-bold skeleton">-- A</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="section-title">Harmonics (THD %)</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="glass-card p-6">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-2">Voltage THD</p>
+      <div class="flex justify-between"><span>R</span><span id="vthd_r" class="text-red-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>Y</span><span id="vthd_y" class="text-yellow-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>B</span><span id="vthd_b" class="text-blue-400 skeleton">--</span></div>
+    </div>
+    <div class="glass-card p-6">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-2">Current THD</p>
+      <div class="flex justify-between"><span>R</span><span id="ithd_r" class="text-red-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>Y</span><span id="ithd_y" class="text-yellow-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>B</span><span id="ithd_b" class="text-blue-400 skeleton">--</span></div>
+    </div>
+    <div class="glass-card p-6">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-2">Power THD</p>
+      <div class="flex justify-between"><span>R</span><span id="powerThd_r" class="text-red-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>Y</span><span id="powerThd_y" class="text-yellow-400 skeleton">--</span></div>
+      <div class="flex justify-between"><span>B</span><span id="powerThd_b" class="text-blue-400 skeleton">--</span></div>
+    </div>
+  </div>
+
+  <h3 class="section-title">Power & Energy</h3>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-card p-6 text-center border-t-4 border-t-green-500">
+      <h3 class="text-xs text-gray-400 uppercase mb-1">Active Power (kW)</h3>
+      <h2 id="activePower" class="text-2xl font-bold text-green-400 skeleton">--</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-indigo-500">
+      <h3 class="text-xs text-gray-400 uppercase mb-1">Apparent Power (kVA)</h3>
+      <h2 id="apparentPower_total" class="text-2xl font-bold text-indigo-400 skeleton">--</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-purple-500">
+      <h3 class="text-xs text-gray-400 uppercase mb-1">Reactive Power (VAR)</h3>
+      <h2 id="reactivePower_total" class="text-2xl font-bold text-pink-400 skeleton">--</h2>
+    </div>
+    <div class="glass-card p-6 text-center border-t-4 border-t-blue-500">
+      <h3 class="text-xs text-gray-400 uppercase mb-1">Power Factor</h3>
+      <h2 id="powerFactor_avg" class="text-2xl font-bold text-purple-400 skeleton">--</h2>
+    </div>
+  </div>
+
+  <h3 class="section-title">Energy Counters</h3>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-card p-6 border-l-4 border-l-blue-500 text-center">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-1">Import Active</p>
+      <p id="import_kwh" class="text-2xl font-bold skeleton">-- kWh</p>
+    </div>
+    <div class="glass-card p-6 border-l-4 border-l-yellow-500 text-center">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-1">Billing Energy</p>
+      <p id="apparent_kvah" class="text-2xl font-bold skeleton">-- kVAh</p>
+    </div>
+    <div class="glass-card p-6 border-l-4 border-l-pink-500 text-center">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-1">Reactive Energy</p>
+      <p id="reactive_kvarh" class="text-2xl font-bold skeleton">-- kVArh</p>
+    </div>
+    <div class="glass-card p-6 border-l-4 border-l-gray-500 text-center opacity-60">
+      <p class="text-xs text-gray-400 font-bold uppercase mb-1">Export Active</p>
+      <p id="export_kwh" class="text-2xl font-bold skeleton">-- kWh</p>
+    </div>
+  </div>
+
+  <h3 class="section-title">Node Health</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="glass-card p-6 flex items-center justify-between">
+      <span class="text-gray-400 font-bold uppercase text-xs">Node Temperature</span>
+      <span id="meterTemperature" class="text-2xl font-bold text-orange-400 skeleton">-- °C</span>
+    </div>
+    <div class="glass-card p-6 flex items-center justify-between">
+      <span class="text-gray-400 font-bold uppercase text-xs">Grid Frequency</span>
+      <span id="frequency_display" class="text-2xl font-bold text-blue-400 skeleton">-- Hz</span>
+    </div>
+  </div>
+
+</div>
+
+<div id="analytics" class="tab-content">
+    <div class="flex flex-col gap-6">
+        
+        <div class="glass-card p-6 flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-white uppercase tracking-widest">Trend Analytics</h2>
+                <p class="text-xs text-gray-400">Deep-dive into historical power patterns and load distribution</p>
+            </div>
+     <div class="flex bg-gray-900 p-1 rounded-xl border border-gray-800 overflow-x-auto">
+    <button onclick="updateTimeRange('live')" id="btn-live" class="whitespace-nowrap px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg transition-all shadow-lg shadow-blue-500/20">LIVE</button>
+    
+    <button onclick="updateTimeRange('1h')" id="btn-1h" class="whitespace-nowrap px-4 py-2 text-xs font-bold text-gray-500 hover:text-white transition-all">1 HR</button>
+    
+    <button onclick="updateTimeRange('24h')" id="btn-24h" class="whitespace-nowrap px-4 py-2 text-xs font-bold text-gray-500 hover:text-white transition-all">24 HR</button>
+    
+    <button onclick="updateTimeRange('7d')" id="btn-7d" class="whitespace-nowrap px-4 py-2 text-xs font-bold text-gray-500 hover:text-white transition-all">7 DAYS</button>
+    <button onclick="updateTimeRange('30d')" id="btn-30d" class="whitespace-nowrap px-4 py-2 text-xs font-bold text-gray-500 hover:text-white transition-all">30 DAYS</button>
+</div>
+        </div>
+
+        <div class="glass-card p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-bold uppercase tracking-widest text-blue-400">System Load Profile (kW vs kVA)</h3>
+                <div class="flex gap-4 text-[10px] font-bold">
+                    <span class="flex items-center gap-1 text-blue-500">● ACTIVE POWER</span>
+                    <span class="flex items-center gap-1 text-purple-500">● APPARENT POWER</span>
+                </div>
+            </div>
+            <div class="h-[400px] w-full">
+                <canvas id="analyticsMasterChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6 mt-6">
+            <div class="col-span-12 lg:col-span-4 glass-card p-6 flex flex-col justify-between border-t-4 border-orange-500">
+               
+                <div class="col-span-12 lg:col-span-4 glass-card p-6 flex flex-col justify-between border-t-4 border-orange-500 transition-colors duration-500" id="forecast-card">
+    <div>
+        <h3 class="text-sm font-bold uppercase tracking-widest text-orange-400 mb-2">Demand Forecast</h3>
+        <p class="text-[10px] text-gray-500 uppercase font-bold">Next 60 Minutes (Estimated)</p>
+    </div>
+    
+    <div class="py-8 text-center">
+        <h2 id="predicted-kva" class="text-5xl font-bold text-white font-mono">0 <span class="text-lg">kVA</span></h2>
+        
+        <div class="w-full bg-gray-800 h-2 mt-4 rounded-full overflow-hidden relative">
+            <div id="forecast-bar" class="h-full w-[0%] transition-all duration-1000 bg-green-500"></div>
+        </div>
+        
+        <p id="forecast-warning" class="text-[10px] text-gray-400 mt-2 font-bold transition-all">CALCULATING LOAD...</p>
+    </div>
+    
+    <div id="ai-insight" class="text-[10px] text-gray-400 bg-white/5 p-2 rounded text-center border border-white/5 transition-all">
+        System Status: Nominal. No action required.
+    </div>
+</div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-8 glass-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-green-400">V vs. PF Correlation</h3>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Stability Analysis</span>
+                </div>
+                <div class="h-[300px]">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-8 mt-6">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-blue-400">Energy Intensity Heatmap</h3>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mt-1">Identifies weekly operational cycles</p>
+                </div>
+                <div class="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase">
+            <span>Low Load</span>
+            <div class="flex gap-1">
+                <div class="w-3 h-3 bg-green-950 border border-white/10 rounded-sm"></div>
+                <div class="w-3 h-3 bg-green-700 rounded-sm"></div>
+                <div class="w-3 h-3 bg-green-500 rounded-sm"></div>
+                <div class="w-3 h-3 bg-green-400 shadow-[0_0_5px_#4ade80] rounded-sm"></div>
+            </div>
+            <span>Peak Load</span>
+        </div>
+            </div>
+            
+            <div id="heatmap-grid" class="grid grid-cols-24 gap-1 border-l border-b border-gray-800 p-2 min-h-[200px]">
+                </div>
+
+            <div class="flex justify-between px-4 mt-2 text-[8px] text-gray-600 font-bold uppercase tracking-widest">
+                <span>00:00 (Midnight)</span>
+                <span>12:00 (Noon)</span>
+                <span>23:59 (Night)</span>
+            </div>
+        </div>
+
+       <div class="glass-card p-6 mt-6">
+    <h3 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 text-center">Weekly Energy Density (Daily Load Profile)</h3>
+    <div class="h-[200px]">
+        <canvas id="loadDensityChart"></canvas>
+    </div>
+</div>
+    </div>
+</div>
+<div id="tariffs" class="tab-content">
+    <div class="flex flex-col gap-6">
+        <div class="glass-card p-6 flex justify-between items-center border-l-4 border-blue-500">
+            <div>
+                <h2 class="text-2xl font-bold text-white uppercase tracking-widest">Shift & Tariff Config</h2>
+                <p class="text-xs text-gray-400">Define operational shifts and electricity rates (₹/kWh)</p>
+            </div>
+           <button 
+              type="button" 
+              onclick="saveTariffSettings(event)" 
+               id="save-tariff-btn" 
+               class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 uppercase tracking-widest">
+               Save All Settings
+        </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 border border-gray-800 hover:border-blue-500/50 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="w-8 h-8 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">A</span>
+                    <h3 class="font-bold text-gray-200">Morning Shift</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">Start</label>
+                            <input type="time" id="shift-a-start" value="06:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">End</label>
+                            <input type="time" id="shift-a-end" value="14:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">Rate (₹/kWh)</label>
+                        <input type="number" id="shift-a-rate" value="7.50" step="0.1" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 border border-red-900/30 bg-red-900/5 hover:border-red-500/50 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="w-8 h-8 rounded bg-red-500/20 text-red-400 flex items-center justify-center font-bold">B</span>
+                    <h3 class="font-bold text-gray-200">Evening (Peak)</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">Start</label>
+                            <input type="time" id="shift-b-start" value="14:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">End</label>
+                            <input type="time" id="shift-b-end" value="22:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">Rate (₹/kWh)</label>
+                        <input type="number" id="shift-b-rate" value="11.20" step="0.1" class="w-full bg-gray-800/50 border border-red-900/50 p-2 rounded text-sm text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 border border-gray-800 hover:border-purple-500/50 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="w-8 h-8 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">C</span>
+                    <h3 class="font-bold text-gray-200">Night Shift</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">Start</label>
+                            <input type="time" id="shift-c-start" value="22:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase">End</label>
+                            <input type="time" id="shift-c-end" value="06:00" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">Rate (₹/kWh)</label>
+                        <input type="number" id="shift-c-rate" value="5.80" step="0.1" class="w-full bg-gray-800/50 border border-gray-700 p-2 rounded text-sm text-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-8">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">Fixed Utility Charges</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">Contract Demand (kVA)</label>
+                    <input type="number" id="fixed-contract-demand" value="500" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">Demand Charge (₹/kVA)</label>
+                    <input type="number" id="fixed-demand-charge" value="280" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">Tax / Surcharge (%)</label>
+                    <input type="number" id="fixed-tax-rate" value="18" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white outline-none">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="alarms" class="tab-content h-full">
+        
+       <div class="flex items-center justify-between mb-4 px-2">
+       <div class="relative flex p-1.5 bg-[#0f1115] border border-gray-800 rounded-2xl shadow-inner w-fit">
+    <div id="alarm-nav-slider" class="absolute top-1.5 left-1.5 h-[calc(100%-12px)] w-[140px] bg-red-600 rounded-xl transition-all duration-300 ease-in-out shadow-lg shadow-red-600/20"></div>
+    
+    <button onclick="toggleAlarmView('dashboard')" id="btn-alarm-dash" class="relative z-10 w-[140px] py-2.5 text-[10px] font-bold uppercase tracking-widest text-white transition-colors">
+         Safety Feed
+    </button>
+
+    <button onclick="toggleAlarmView('archive')" id="btn-alarm-arch" class="relative z-10 w-[140px] py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 transition-colors">
+         Alarm Archive
+    </button>
+
+    <button onclick="toggleAlarmView('settings')" id="btn-alarm-sett" class="relative z-10 w-[140px] py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 transition-colors">
+         Safety Limits
+    </button>
+     </div> 
+    </div>
+    <div class="flex items-center gap-3 px-4 py-2 bg-red-950/20 border border-red-500/20 rounded-full">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+        <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Global Watch Active</span>
+    </div>
+
+       <div id="alarm-view-dashboard" class="flex-1 grid grid-cols-12 gap-6 overflow-hidden bg-gray-900 p-4">
+
+    <!-- Active Threats Card -->
+    <div class="col-span-12 lg:col-span-8 glass-card bg-gray-900/40 backdrop-blur-lg border-t-4 border-red-600 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="p-4 bg-red-600/10 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-xs font-extrabold text-red-400 uppercase tracking-wider flex items-center space-x-2 animate-pulse">
+                <span>🔴</span><span>Active Threats</span>
+            </h3>
+            <span id="active-count" class="text-xs bg-red-600 px-3 py-1 rounded-full font-bold text-white shadow-md">
+                0 ACTIVE
+            </span>
+        </div>
+        <!-- Active Threats List -->
+        <div id="active-list" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar scrollbar-thumb-red-600 scrollbar-track-gray-800">
+            <!-- Example Entry -->
+            <!--
+            <div class="flex justify-between items-center bg-red-800/30 p-3 rounded-lg shadow-inner">
+                <span class="text-xs text-white font-medium">Over-Voltage: 460V</span>
+                <span class="text-xs text-red-300 font-bold">CRITICAL</span>
+            </div>
+            -->
+        </div>
+    </div>
+
+    <!-- Resolved History Card -->
+    <div class="col-span-12 lg:col-span-4 glass-card bg-gray-900/40 backdrop-blur-lg border-t-4 border-green-600 rounded-2xl shadow-2xl flex flex-col overflow-hidden opacity-90">
+        <!-- Header -->
+        <div class="p-4 bg-green-600/10 border-b border-gray-700">
+            <h3 class="text-xs font-extrabold text-green-400 uppercase tracking-wider flex items-center space-x-2">
+                <span>🟢</span><span>Resolved History</span>
+            </h3>
+        </div>
+        <!-- Resolved List -->
+        <div id="resolved-list" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar scrollbar-thumb-green-600 scrollbar-track-gray-800">
+            <!-- Example Entry -->
+            <!--
+            <div class="flex justify-between items-center bg-green-800/30 p-3 rounded-lg shadow-inner">
+                <span class="text-xs text-white font-medium">Under-Voltage: 372V</span>
+                <span class="text-xs text-green-300 font-bold">RESOLVED</span>
+            </div>
+            -->
+        </div>
+    </div>
+
+</div>
+<div id="alarm-view-archive" class="hidden flex-1 flex flex-col gap-6">
+    <div class="glass-card p-6 border-l-4 border-indigo-500 bg-indigo-500/5 rounded-2xl">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h4 class="text-sm font-bold text-white uppercase tracking-widest">Incident Investigation</h4>
+                <p class="text-[10px] text-gray-500 uppercase font-bold mt-1">Querying Master Security Logs</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <input type="date" id="alarm-archive-date" class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                <button onclick="fetchAlarmsByDate(1)" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-6 py-2.5 rounded-xl shadow-lg transition-all uppercase">
+                    Search Archive
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card flex-1 overflow-hidden flex flex-col rounded-2xl bg-black/20 min-h-[400px]">
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-[#0f1115] z-10 text-[9px] text-gray-500 uppercase font-bold tracking-widest border-b border-gray-800">
+                    <tr>
+                        <th class="p-4">Timestamp</th>
+                        <th class="p-4">Fault Description</th>
+                        <th class="p-4 text-center">Measured Value</th>
+                        <th class="p-4 text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="archive-table-body" class="text-[11px] font-mono divide-y divide-gray-800/30">
+                    <tr>
+                        <td colspan="4" class="p-20 text-center text-gray-600 italic uppercase text-[10px]">
+                            Enter a date to retrieve historical logs
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="archive-pagination" class="hidden flex items-center justify-between p-4 bg-black/40 border-t border-gray-800">
+            <button onclick="changeArchivePage(-1)" id="prev-arch-btn" class="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-[10px] font-bold uppercase hover:bg-gray-700 disabled:opacity-20 transition-all">
+                Previous
+            </button>
+            <div class="flex flex-col items-center">
+                <span id="arch-page-info" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Page 1 of 1</span>
+                <span id="arch-total-count" class="text-[9px] text-indigo-400 font-black mt-1">0 INCIDENTS</span>
+            </div>
+            <button onclick="changeArchivePage(1)" id="next-arch-btn" class="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-[10px] font-bold uppercase hover:bg-gray-700 disabled:opacity-20 transition-all">
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+
+  <div id="alarm-view-settings" class="hidden flex-1 overflow-y-auto pr-4 pb-10 custom-scrollbar bg-gray-900">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8 p-6 rounded-2xl border border-gray-700 bg-gradient-to-r from-red-800/30 to-red-900/10 shadow-lg">
+        <div>
+            <h3 class="text-2xl font-extrabold text-white tracking-tight uppercase italic">
+                Safety Protocol <span class="text-red-500">Matrix</span>
+            </h3>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Authorized Engineering Access Only</p>
+        </div>
+        <button onclick="saveAllThresholds()" id="commit-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-8 py-3 rounded-xl shadow-xl uppercase tracking-wider transition-all">
+            Commit Safety Boundaries
+        </button>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Voltage Dynamics -->
+        <div class="glass-card p-6 rounded-2xl border-l-4 border-blue-500 bg-gradient-to-b from-blue-900/20 to-blue-900/5 shadow-2xl backdrop-blur-sm">
+            <h4 class="text-sm font-bold text-blue-400 uppercase tracking-wide mb-4">Voltage Dynamics</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Over-Voltage</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">>110%</span>
+                        <input type="number" id="v-ov" value="456" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Under-Voltage</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">&lt;90%</span>
+                        <input type="number" id="v-uv" value="373" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Voltage Imbalance</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">Tol %</span>
+                        <input type="number" id="v-imb" value="3" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-gray-700 flex justify-between items-center text-xs font-bold text-red-500">
+                    <span>Phase Loss Sensing</span>
+                    <span class="bg-red-900/40 text-red-400 px-2 py-1 rounded font-mono">0.0V AUTO</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current & Thermal -->
+        <div class="glass-card p-6 rounded-2xl border-l-4 border-yellow-500 bg-gradient-to-b from-yellow-900/20 to-yellow-900/5 shadow-2xl backdrop-blur-sm">
+            <h4 class="text-sm font-bold text-yellow-400 uppercase tracking-wide mb-4">Current & Thermal</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Over-Current</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">Amps</span>
+                        <input type="number" id="i-oc" value="110" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">I-Imbalance</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">Tol %</span>
+                        <input type="number" id="i-imb" value="15" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Neutral Load</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">> 30%</span>
+                        <input type="number" id="i-neu" value="40" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-gray-300 font-semibold">Core Temp</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">Max °C</span>
+                        <input type="number" id="t-int" value="75" class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 focus:outline-none" />
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+      <div class="glass-card p-6 rounded-2xl border-l-4 border-teal-500 bg-gradient-to-b from-teal-900/20 to-teal-900/5 shadow-2xl backdrop-blur-sm">
+    <h4 class="text-sm font-bold text-teal-400 uppercase tracking-wide mb-4">Contracted Load</h4>
+    <div class="flex justify-between items-center">
+        <label class="text-xs text-gray-300 font-semibold">Allotted Load</label>
+        <div class="flex items-center space-x-2">
+            <input type="number" id="allotted-load" value="500" class="w-24 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 focus:outline-none" />
+            <span class="text-xs text-gray-400">kVA</span>
+        </div>
+    </div>
+    <p class="mt-2 text-[10px] text-gray-500">Used for MD comparison & alarms</p>
+</div>
+
+<!-- Power Factor: Average PF (Import) -->
+<div class="glass-card p-6 rounded-2xl border-l-4 border-cyan-500 bg-gradient-to-b from-cyan-900/20 to-cyan-900/5 shadow-2xl backdrop-blur-sm">
+    <h4 class="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-4">Average PF (Import)</h4>
+    <div class="flex justify-between items-center mb-3">
+        <label class="text-xs text-gray-300 font-semibold">Current PF</label>
+        <input type="number" id="pf-average" value="0.96" step="0.01" 
+               class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none" />
+    </div>
+    <div class="flex justify-between items-center">
+        <span class="text-xs text-gray-400">Target PF</span>
+        <span class="text-xs text-green-400 font-bold">≥ 0.95</span>
+    </div>
+</div>
+
+<!-- Power Factor: Leading / Lagging -->
+<div class="glass-card p-6 rounded-2xl border-l-4 border-purple-500 bg-gradient-to-b from-purple-900/20 to-purple-900/5 shadow-2xl backdrop-blur-sm">
+    <h4 class="text-sm font-bold text-purple-400 uppercase tracking-wide mb-4">PF Status (Leading / Lagging)</h4>
+    <div class="space-y-3">
+        <div class="flex justify-between items-center">
+            <label class="text-xs text-gray-300 font-semibold">Leading PF</label>
+            <input type="number" id="pf-lead" value="0.98" step="0.01" 
+                   class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 focus:outline-none" />
+        </div>
+        <div class="flex justify-between items-center">
+            <label class="text-xs text-gray-300 font-semibold">Lagging PF</label>
+            <input type="number" id="pf-lag" value="0.94" step="0.01" 
+                   class="w-20 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 focus:outline-none" />
+        </div>
+        <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
+            <span>Warning PF</span>
+            <span class="text-yellow-400 font-bold">0.92</span>
+        </div>
+        <div class="flex justify-between items-center text-xs text-gray-400">
+            <span>Critical PF</span>
+            <span class="text-red-500 font-bold">0.90</span>
+        </div>
+    </div>
+</div>
+  <!-- Repeat the same premium card style for the rest of categories: Demand & Quality, Grid Stability, System Integrity -->
+        <!-- Use: border-l-4 with category color, gradient bg, shadow-2xl, input with bg-gray-800 & white text -->
+
+    </div>
+</div>
+
+    </div>
+</div>
+<div id="assets" class="tab-content">
+    <div class="flex flex-col gap-8">
+    <div class="flex justify-between items-end">
+        <div>
+            <h3 class="text-sm font-bold uppercase tracking-widest text-gray-500">Connected Assets</h3>
+            <p class="text-2xl font-bold text-white">Machine Health Monitor</p>
+        </div>
+        <button class="bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg border border-gray-700 transition-all">
+            + REGISTER NEW ASSET
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div class="glass-card p-6 border-b-4 border-b-green-500 relative group">
+            <div class="flex justify-between items-start mb-6">
+                <div class="p-3 bg-green-500/10 rounded-xl text-green-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <span class="px-2 py-1 bg-green-500/20 text-green-500 text-[8px] font-bold rounded">OPTIMAL</span>
+            </div>
+            <h4 class="text-lg font-bold text-white uppercase">Main Air Compressor</h4>
+            <p class="text-[10px] text-gray-500 font-mono">ID: KILL-MAC-01 | NODE: CUB-01</p>
+            
+            <div class="mt-6 space-y-3">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-400">Current Load</span>
+                    <span class="text-white font-bold">12.4 kW</span>
+                </div>
+                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-green-500 h-full w-[overview]"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-500">
+                    <span>Efficiency: 94%</span>
+                    <span>Runtime: 452h</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-6 border-b-4 border-b-red-600 bg-red-600/5 relative group">
+            <div class="flex justify-between items-start mb-6">
+                <div class="p-3 bg-red-500/10 rounded-xl text-red-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                </div>
+                <span class="px-2 py-1 bg-red-500/20 text-red-500 text-[8px] font-bold rounded animate-pulse">OVERLOAD</span>
+            </div>
+            <h4 class="text-lg font-bold text-white uppercase">Hydraulic Press 02</h4>
+            <p class="text-[10px] text-gray-500 font-mono">ID: KILL-HP-02 | NODE: CUB-01</p>
+            
+            <div class="mt-6 space-y-3">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-400">Current Load</span>
+                    <span class="text-red-500 font-bold">48.2 kW</span>
+                </div>
+                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-red-600 h-full w-[92%]"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-red-400 font-bold">
+                    <span>Efficiency: 62%</span>
+                    <span>HEAT ALERT: 78°C</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+<div id="Reports" class="tab-content relative p-4" style="min-height: 100vh;">
+    <div id="column-dropdown" class="hidden absolute top-[120px] right-8 w-64 bg-[#0f172a]/95 backdrop-blur-2xl border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] z-[9999] p-4 animate-in fade-in zoom-in-95 duration-200">
+        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">Select Parameters</h4>
+        <div id="column-list" class="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+            </div>
+    </div>
+
+    <div class="flex flex-col gap-6 h-full p-1">
+        <div class="glass-card p-6 rounded-2xl flex flex-wrap items-center justify-between gap-6 border-l-4 border-blue-500">
+            <div class="flex items-center gap-4">
+                <div class="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl">
+                    <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white uppercase tracking-tight">Enterprise Archive</h2>
+                    <p class="text-xs text-slate-400 font-semibold mt-1">Multi-Period Telemetry Retrieval</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Start Date</label>
+                        <input type="date" id="audit-start-date" class="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                    </div>
+                    <span class="text-slate-600 mt-6">→</span>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">End Date</label>
+                        <input type="date" id="audit-end-date" class="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Operational Shift</label>
+                    <select id="shift-filter" class="bg-slate-800/70 border border-slate-600/50 hover:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none backdrop-blur-sm cursor-pointer transition-all">
+                        <option value="all">All Shifts</option>
+                        <option value="A">Shift A (Morning)</option>
+                        <option value="B">Shift B (Evening)</option>
+                        <option value="C">Shift C (Night)</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 self-end">
+                    <button onclick="toggleColumnDropdown(event)" class="bg-slate-800/70 border border-slate-600/50 hover:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none transition-all backdrop-blur-sm cursor-pointer shadow-lg shadow-black/20 w-[140px] flex items-center justify-between">
+                        <span class="font-bold tracking-wide uppercase text-[10px]">Columns</span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <button onclick="fetchRangeAudit()" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold py-3 px-6 rounded-xl uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20">
+                        Generate
+                    </button>
+                    
+                    <button onclick="exportToCSV()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-[10px] font-bold px-4 py-3 rounded-xl uppercase transition-all">CSV</button>
+                    <button onclick="generatePDF()" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-4 py-3 rounded-xl uppercase transition-all shadow-lg shadow-purple-600/20">PDF</button>
+                    <div class="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+    <input type="checkbox" id="pdf-summary-only" class="w-4 h-4 rounded border-slate-700 text-blue-600 focus:ring-blue-500 bg-slate-900">
+    <label for="pdf-summary-only" class="text-[10px] font-bold text-slate-300 uppercase tracking-wider cursor-pointer">
+        Summary Only
+    </label>
+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-card p-6 rounded-xl border-l-4 border-blue-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Peak Demand</p>
+                <p id="report-peak-md" class="text-3xl font-bold font-mono text-white mb-1">---.- <span class="text-sm text-blue-400">kVA</span></p>
+            </div>
+            <div class="glass-card p-6 rounded-xl border-l-4 border-emerald-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Avg. Efficiency</p>
+                <p id="report-avg-pf" class="text-3xl font-bold text-emerald-400 font-mono mb-1">-.---</p>
+            </div>
+            <div class="glass-card p-6 rounded-xl border-l-4 border-violet-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Energy Consumed</p>
+                <p id="report-total-kwh" class="text-3xl font-bold text-white font-mono mb-1">--- <span class="text-sm text-violet-400">kWh</span></p>
+            </div>
+            <div class="glass-card p-6 rounded-xl border-l-4 border-cyan-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Samples</p>
+                <p id="total-count" class="text-3xl font-bold text-cyan-400 font-mono mb-1">0</p>
+            </div>
+        </div>
+  <!-- Replace the existing pagination div in the Reports tab -->
+<div class="glass-card rounded-2xl shadow-2xl border border-slate-800/50 flex flex-col" style="height: 700px;">
+    <!-- Header -->
+    <div class="p-5 bg-slate-900/90 flex justify-between items-center border-b border-slate-800/50 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-1 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">Master Audit Log</h3>
+        </div>
+    </div>
+    
+    <!-- Scrollable Table Container -->
+    <div class="flex-1 overflow-auto custom-scrollbar">
+        <table id="audit-table" class="w-full text-left border-collapse">
+            <thead class="sticky top-0 bg-slate-900 z-20 shadow-md">
+                <tr id="audit-table-header" class="text-[10px] text-slate-400 uppercase font-bold tracking-widest border-b border-slate-800">
+                </tr>
+            </thead>
+            <tbody id="audit-table-body" class="text-[11px] font-mono divide-y divide-slate-800/30">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- FIXED Pagination Footer - CORRECTED -->
+    <div class="p-6 bg-slate-900 border-t border-slate-700 shrink-0 flex justify-between items-center z-30 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+    <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+        <div class="text-sm text-slate-300 font-bold tracking-wide uppercase">
+            Records: <span id="current-range" class="text-blue-400 font-mono text-base ml-1">0 - 0</span>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-6">
+        <button 
+            id="prev-page-btn"
+            onclick="changePage(-1)" 
+            class="group flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-blue-600/20 border border-slate-600 rounded-xl text-white text-xs font-black uppercase transition-all disabled:opacity-20 disabled:cursor-not-allowed active:scale-95">
+            <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+            Previous
+        </button>
+
+        <div id="page-indicator" class="min-w-[120px] text-center py-3 bg-blue-600/10 rounded-xl text-sm font-black text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)] uppercase tracking-tighter">
+            PAGE 1
+        </div>
+
+        <button 
+            id="next-page-btn"
+            onclick="changePage(1)" 
+            class="group flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 border border-blue-400/50 rounded-xl text-white text-xs font-black uppercase transition-all shadow-lg shadow-blue-900/20 disabled:opacity-20 disabled:cursor-not-allowed active:scale-95">
+            Next
+            <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    </div>
+</div>
+</div>
+</div>
+        </div>
+    </div>
+</div>
+<div id="financials" class="tab-content custom-scrollbar px-6 py-8">
+  <div class="max-w-7xl mx-auto space-y-8">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div>
+            <h2 class="text-2xl font-black text-white tracking-tight uppercase">
+                Financial <span class="text-blue-500">Analytics</span>
+            </h2>
+            <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Live Billing & Audit Engine</p>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full">
+            <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            <span class="text-[10px] font-black text-blue-400 uppercase">Real-time Calculation Active</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="glass-card p-6 border-l-4 border-emerald-600 bg-gradient-to-br from-emerald-600/5 to-transparent shadow-xl">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Est. Accrued Bill</p>
+        <h2 id="cost-energy" class="text-3xl font-black text-white mt-2 font-mono">₹ 0.00</h2>
+        <div class="flex items-center gap-2 mt-3">
+            <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded font-bold uppercase">Live</span>
+            <p class="text-[10px] text-emerald-500/80 font-bold uppercase">Cycle: ₹ 42,500</p>
+        </div>
+      </div>
+
+      <div class="glass-card p-6 border-l-4 border-red-600 bg-gradient-to-br from-red-600/5 to-transparent shadow-xl">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Efficiency Penalties</p>
+        <h2 id="cost-penalty" class="text-3xl font-black text-white mt-2 font-mono text-red-500">₹ 0.00</h2>
+        <p class="text-[10px] text-red-400/80 mt-3 font-bold uppercase italic">PF & MD Violations</p>
+      </div>
+
+      <div class="glass-card p-6 border-l-4 border-blue-600 bg-gradient-to-br from-blue-600/5 to-transparent shadow-xl">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Fixed Demand Cost</p>
+        <h2 id="cost-md" class="text-3xl font-black text-white mt-2 font-mono">₹ 0.00</h2>
+        <p id="md-peak-text" class="text-[10px] text-blue-400 mt-3 font-bold uppercase tracking-widest">MD Peak: 482.5 kVA</p>
+      </div>
+
+      <div class="glass-card p-6 border-l-4 border-purple-600 bg-gradient-to-br from-purple-600/5 to-transparent shadow-xl">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Blended Unit Rate</p>
+        <h2 id="avg-unit-rate" class="text-3xl font-black text-white mt-2 font-mono">₹ --</h2>
+        <p class="text-[10px] text-purple-400 mt-3 font-bold uppercase tracking-widest">Avg Cost / kWh</p>
+      </div>
+    </div>
+
+    <div class="glass-card p-8 border border-white/5 bg-slate-900/40">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-6">
+            <div class="space-y-1">
+                <h3 class="text-lg font-black text-indigo-400 uppercase tracking-tighter">Period Audit Engine</h3>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Reconstruct Historical Shift-Wise Energy Costs</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+    <div class="flex flex-col">
+        <label class="text-[9px] font-black text-slate-500 uppercase ml-1">Period Start</label>
+        <input type="date" id="audit-start-date-1" class="bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 outline-none transition-all shadow-inner">
+    </div>
+    
+    <span class="text-slate-600 mt-4">→</span>
+
+    <div class="flex flex-col">
+        <label class="text-[9px] font-black text-slate-500 uppercase ml-1">Period End</label>
+        <input type="date" id="audit-end-date-1" class="bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 outline-none transition-all shadow-inner">
+    </div>
+
+    <button onclick="executeShiftAudit()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 uppercase tracking-widest mt-4">
+        Run Range Analysis
+    </button>
+</div>
+        </div>
+
+        <div id="audit-results-container" class="hidden overflow-hidden rounded-2xl border border-white/5 bg-black/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <table class="w-full text-left">
+                <thead class="bg-white/5">
+                    <tr class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-black border-b border-white/5">
+                        <th class="p-5">Shift</th>
+                        <th class="p-5 text-center">Time Window</th>
+                        <th class="p-5 text-center">Consumption (kWh)</th>
+                        <th class="p-5 text-center">Tariff Rate</th>
+                        <th class="p-5 text-right">Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="shift-audit-body" class="text-xs font-mono text-slate-300 divide-y divide-white/5">
+                    </tbody>
+                <tfoot class="bg-indigo-600/10 border-t-2 border-indigo-600/30">
+                    <tr class="font-black text-white uppercase text-[10px] tracking-widest">
+                        <td colspan="2" class="p-5 text-indigo-400">Total Audit Projection</td>
+                        <td id="audit-total-units" class="p-5 text-center">0.00 kWh</td>
+                        <td class="p-5 text-center text-slate-500 italic">Blended</td>
+                        <td id="audit-total-cost" class="p-5 text-right text-emerald-400 text-lg">₹ 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 glass-card border border-white/5 flex flex-col">
+            <div class="p-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-white">Shadow Billing Audit</h3>
+                <button class="text-[9px] font-black bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-lg transition-all uppercase tracking-widest">
+                    Upload PDF Bill
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-black/20 text-[9px] font-black text-slate-500 uppercase border-b border-white/5">
+                        <tr>
+                            <th class="p-4">Billing Month</th>
+                            <th class="p-4 text-center">IoT Recorded</th>
+                            <th class="p-4 text-center">Utility Billed</th>
+                            <th class="p-4 text-center">Variance</th>
+                            <th class="p-4 text-right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="p-4 text-slate-300 font-bold">December 2025</td>
+                            <td class="p-4 text-center text-slate-400 font-mono">12,450.5</td>
+                            <td class="p-4 text-center text-slate-400 font-mono">12,462.0</td>
+                            <td class="p-4 text-center text-emerald-400 font-black">+0.09%</td>
+                            <td class="p-4 text-right"><span class="px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded text-[9px] font-black uppercase border border-emerald-500/20">Verified</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 glass-card p-6 flex flex-col items-center justify-between border border-white/5">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-center text-slate-400 mb-6">Shift Cost Distribution</h3>
+            <div class="relative w-40 h-40 flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90">
+                    <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-800" />
+                    <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="transparent" stroke-dasharray="440" stroke-dashoffset="110" class="text-blue-500" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Net Bill</p>
+                    <p class="text-2xl font-black text-white font-mono">₹ 1.2M</p>
+                </div>
+            </div>
+            <div class="w-full mt-6 space-y-2">
+                <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-blue-500">Shift A</span><span class="text-slate-300">₹ 420K</span></div>
+                <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-red-500">Shift B</span><span class="text-slate-300">₹ 680K</span></div>
+                <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-purple-500">Shift C</span><span class="text-slate-300">₹ 100K</span></div>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+</main>
+
+<script>
+    // --- CONFIGURATION ---
+const API_URL = 'http://localhost:3000/api'; // <--- ADD THIS LINE
+ const socket = io();
+    /**
+     * NEXUSGRID ENTERPRISE ENGINE - FINAL INTEGRATED VERSION
+     * Handles: Simulation, Billing, Charts, Alarms, Reporting, and UI Updates
+     */
+
+    // --- 1. GLOBAL VARIABLES (Must be here to be seen by everyone) ---
+    const CONFIG = {
+        bgGrid: '#334155', 
+        colorActive: '#3b82f6', 
+        colorApparent: '#a855f7', 
+    };
+
+    // Chart Instances (Global)
+    let mainAnalyticsChart = null;     
+    let correlationChartInstance = null; 
+    let loadDensityChartInstance = null; 
+    let heatmapIndex = 0;              
+
+    // Data Management
+    let fullAuditData = [];
+    let currentPage = 1;
+    const itemsPerPage =25;
+    let cumulativeCost = 0;
+
+    // --- 2. INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("🚀 NexusGrid Enterprise: Online");
+        
+        // A. Create the Charts first
+        initAnalyticsCharts();
+        initAdvancedCharts();
+        generateHeatmap(); // Draw the initial grid
+
+        // B. Start listening for Data
+        startLiveStream(); 
+        
+        // C. Update UI bits
+        updateSubscriptionUI();
+    });
+
+    // --- 3. CHART CREATION FUNCTIONS ---
+    function initAnalyticsCharts() {
+        const ctx = document.getElementById('analyticsMasterChart');
+        if(!ctx) return;
+
+        mainAnalyticsChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [], // Start Empty
+                datasets: [
+                    {
+                        label: 'Active Power (kW)',
+                        data: [],
+                        borderColor: CONFIG.colorActive,
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Apparent Power (kVA)',
+                        data: [],
+                        borderColor: CONFIG.colorApparent,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: false, // Important for performance
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+    }
+
+// --- INITIALIZE ADVANCED CHARTS ---
+// --- INITIALIZE ADVANCED CHARTS (Crash Fixed) ---
+// --- GLOBAL CHART VARIABLES (Initialize to NULL) ---
+
+let loadDensityChart = null;
+let comparisonChart = null; 
+
+// --- INITIALIZE ADVANCED CHARTS (Final Version) ---
+function initAdvancedCharts() {
+    console.log("📊 Initializing Advanced Charts...");
+
+    // 1. V vs PF Correlation (Scatter Plot)
+    const scatterCtx = document.getElementById('correlationChart');
+    if (scatterCtx) {
+        // Safety Check: Destroy existing chart if it exists
+        if (correlationChartInstance) { 
+            correlationChartInstance.destroy();
+        }
+
+        correlationChartInstance = new Chart(scatterCtx.getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Real-time Correlation',
+                    data: [], 
+                    backgroundColor: '#10b981',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    x: { 
+                        min: 210, max: 250, 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        title: { display: true, text: 'Voltage (V)', color: '#64748b' },
+                        ticks: { color: '#94a3b8' }
+                    }, 
+                    y: { 
+                        min: 0.5, max: 1.0, 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        title: { display: true, text: 'Power Factor', color: '#64748b' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 2. Weekly Density (Bar Chart)
+    const densityCtx = document.getElementById('loadDensityChart');
+    if (densityCtx) {
+        if (loadDensityChart) {
+            loadDensityChart.destroy();
+        }
+
+        loadDensityChart = new Chart(densityCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: [], 
+                datasets: [{ 
+                    label: 'Energy (kWh)', 
+                    data: [], 
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4,
+                    barThickness: 20
+                }]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. Daily Comparison (Doughnut Chart)
+    const compareCtx = document.getElementById('comparisonChart');
+    if (compareCtx) {
+        if (comparisonChart) {
+            comparisonChart.destroy();
+        }
+
+        comparisonChart = new Chart(compareCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Yesterday', 'Today'],
+                datasets: [{
+                    data: [0, 0], 
+                    backgroundColor: ['#64748b', '#3b82f6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+}
+function startLiveStream() {
+        console.log("🔌 Connecting to Stream...");
+       
+
+   socket.on('new-data', (data) => {
+            
+            // --- A. TEXT UPDATES (Voltages, Currents, etc.) ---
+            // These should update continuously regardless of chart mode
+            Object.keys(data).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) {
+                    el.classList.remove('skeleton');
+                    el.innerText = `${data[key]} ${getUnit(key)}`;
+                    el.style.color = '#3b82f6'; // Flash Blue
+                    setTimeout(() => el.style.color = '', 300);
+                }
+            });
+
+            // Update Manual Averages
+            if(data.voltage_r && data.voltage_y && data.voltage_b) {
+                const avg = (data.voltage_r + data.voltage_y + data.voltage_b) / 3;
+                updateManual('voltage_ln_avg', avg.toFixed(1) + " V");
+                updateManual('voltage_ln_avg_disp', avg.toFixed(1) + " V");
+                updateManual('voltage_ll_avg', (avg * 1.732).toFixed(1) + " V");
+            }
+
+            // --- B. PREPARE DATA ---
+            const now = new Date().toLocaleTimeString();
+            const powerVal = data.active_power || data.activePower || 0;
+            const apparentVal = data.apparent_power || data.apparentPower_total || 0;
+            const voltageVal = data.voltage_r || 230;
+            const pfVal = data.power_factor || 0.95;
+
+
+            // --- C. CHART UPDATES (ONLY IF IN LIVE MODE) ---
+            // This prevents the socket from overwriting your "7 Day History" demo
+            if (isLiveMode && mainAnalyticsChart) {
+                mainAnalyticsChart.data.labels.push(now);
+                mainAnalyticsChart.data.datasets[0].data.push(powerVal);
+                mainAnalyticsChart.data.datasets[1].data.push(apparentVal);
+
+                // FIFO Logic (Keep chart scrolling)
+                if(mainAnalyticsChart.data.labels.length > 50) {
+                    mainAnalyticsChart.data.labels.shift();
+                    mainAnalyticsChart.data.datasets[0].data.shift();
+                    mainAnalyticsChart.data.datasets[1].data.shift();
+                }
+                mainAnalyticsChart.update('none');
+            }
+
+
+            // --- D. OTHER CHARTS (Always Live) ---
+            
+          // --- D. OTHER CHARTS ---
+            
+            // 2. Scatter Plot (Voltage vs PF)
+            // UPDATED: Now checks "isLiveMode" before updating
+            if(isLiveMode && correlationChartInstance) {
+                correlationChartInstance.data.datasets[0].data.push({ x: voltageVal, y: pfVal });
+                
+                // Keep chart clean (only 30 points in live mode)
+                if(correlationChartInstance.data.datasets[0].data.length > 30) {
+                    correlationChartInstance.data.datasets[0].data.shift();
+                }
+                correlationChartInstance.update('none');
+            }
+
+          // --- 5. DEMAND FORECAST LOGIC (Dynamic) ---
+            const kvaElement = document.getElementById('predicted-kva');
+            const barElement = document.getElementById('forecast-bar');
+            const warnElement = document.getElementById('forecast-warning');
+            const aiElement = document.getElementById('ai-insight');
+            const cardElement = document.getElementById('forecast-card');
+
+            if (kvaElement) {
+                // 1. Prediction Logic (Current Load + 5% Safety Buffer)
+                const predicted = (apparentVal * 1.05).toFixed(0);
+                const limit = 500; // Contract Limit of Factory
+                const percent = Math.min((predicted / limit) * 100, 100);
+
+                // 2. Update Number
+                kvaElement.innerHTML = `${predicted} <span class="text-lg">kVA</span>`;
+
+                // 3. Update Bar Width
+                barElement.style.width = `${percent}%`;
+
+                // 4. COLOR & ALARM LOGIC
+                if (percent > 90) {
+                    // CRITICAL STATE
+                    barElement.className = "h-full transition-all duration-1000 bg-red-600 shadow-[0_0_10px_red]";
+                    warnElement.innerHTML = `⚠️ ${percent.toFixed(0)}% OF CONTRACT LIMIT REACHED`;
+                    warnElement.className = "text-[10px] text-red-500 mt-2 font-bold animate-pulse";
+                    
+                    aiElement.innerHTML = "🚨 ACTION: Shutdown Sector 4 HVAC immediately.";
+                    aiElement.className = "text-[10px] text-red-200 bg-red-900/30 p-2 rounded text-center border border-red-500/50";
+                } 
+                else if (percent > 75) {
+                    // WARNING STATE
+                    barElement.className = "h-full transition-all duration-1000 bg-yellow-500";
+                    warnElement.innerHTML = `⚠️ CAUTION: LOAD INCREASING`;
+                    warnElement.className = "text-[10px] text-yellow-500 mt-2 font-bold";
+                    
+                    aiElement.innerHTML = "Insight: Peak hours approaching. Monitor VFDs.";
+                    aiElement.className = "text-[10px] text-yellow-200 bg-yellow-900/30 p-2 rounded text-center border border-yellow-500/50";
+                } 
+                else {
+                    // NORMAL STATE
+                    barElement.className = "h-full transition-all duration-1000 bg-green-500";
+                    warnElement.innerHTML = `✅ SYSTEM WITHIN LIMITS`;
+                    warnElement.className = "text-[10px] text-green-500 mt-2 font-bold";
+                    
+                    aiElement.innerHTML = "System Status: Nominal. Efficiency optimized.";
+                    aiElement.className = "text-[10px] text-gray-400 bg-white/5 p-2 rounded text-center border border-white/5";
+                }
+            }
+
+            // 4. Heatmap Animation (Always running to look cool)
+            const intensity = Math.min(powerVal / 200, 1.0); 
+            updateLiveHeatmap(intensity);
+
+            // 5. Billing Engine
+            updateBillingEngine(data);
+        }); }
+
+    function updateManual(id, val) {
+        const el = document.getElementById(id);
+        if(el) {
+            el.innerText = val;
+            el.classList.remove('skeleton');
+        }
+    }
+function updateBillingEngine(data) {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const powerKW = parseFloat(data.activePower || 0);
+    
+    // --- DYNAMIC SHIFT DETECTION ---
+    // Instead of hardcoded hours, we pull from our TARIFF_CONFIG
+    let activeRate = TARIFF_CONFIG.shifts.A.rate; // Default to Shift A
+
+    // Get shift timings from UI inputs
+    const sB_Start = parseInt(TARIFF_CONFIG.shifts.B.start);
+    const sB_End   = parseInt(TARIFF_CONFIG.shifts.B.end);
+    const sC_Start = parseInt(TARIFF_CONFIG.shifts.C.start);
+    const sC_End   = parseInt(TARIFF_CONFIG.shifts.C.end);
+
+    // Check if current hour falls into Shift B
+    if (currentHour >= sB_Start && currentHour < sB_End) {
+        activeRate = TARIFF_CONFIG.shifts.B.rate;
+    } 
+    // Check if current hour falls into Shift C (Handles midnight crossover)
+    else if (currentHour >= sC_Start || currentHour < sC_End) {
+        activeRate = TARIFF_CONFIG.shifts.C.rate;
+    }
+
+    // --- CALCULATION ---
+    const costPerSecond = (powerKW * activeRate) / 3600;
+    cumulativeCost += costPerSecond;
+
+    // Update UI
+    const costEl = document.getElementById('cost-energy');
+    if(costEl) costEl.innerText = `₹ ${cumulativeCost.toFixed(2)}`;
+    
+    // Update the "Active Rate" display card
+    const rateEl = document.getElementById('avg-unit-rate');
+    if(rateEl) rateEl.innerText = `₹ ${activeRate.toFixed(2)}`;
+}
+
+// --- 5. HEATMAP & UTILITIES ---
+
+// A. GENERATE EMPTY GRID (Must run on load)
+function generateHeatmap() {
+    const grid = document.getElementById('heatmap-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = ''; // Clear any existing cells
+    
+    const totalCells = 168; // 7 days * 24 hours
+    
+    for (let i = 0; i < totalCells; i++) {
+        const div = document.createElement('div');
+        
+        // CRITICAL: Assign ID so we can find this cell later!
+        div.id = `hm-cell-${i}`; 
+        
+        // Default Style: Empty Dark Green/Slate
+        div.className = "w-full h-4 rounded-sm transition-colors duration-500 bg-slate-800 border border-transparent";
+        div.title = "No Data"; 
+        
+        grid.appendChild(div);
+    }
+}
+
+// B. UPDATE LIVE CELL COLOR (Called by Socket)
+function updateLiveHeatmap(intensity) {
+    // Target the last cell (The "Current Hour")
+    // Assuming 7 days * 24 hours = 168 cells total. Last index is 167.
+    const totalCells = 168; 
+    const liveCell = document.getElementById(`hm-cell-${totalCells - 1}`);
+    
+    if (liveCell) {
+        // Apply Green Gradient Logic
+        if (intensity > 0.9) {
+            // Neon Green + Pulse Animation for Peak Live Data
+            liveCell.className = "w-full h-4 rounded-sm transition-colors duration-300 bg-green-400 shadow-[0_0_15px_#4ade80] border border-white animate-pulse";
+        } 
+        else if (intensity > 0.7) {
+            liveCell.className = "w-full h-4 rounded-sm transition-colors duration-300 bg-green-500 border border-white";
+        } 
+        else if (intensity > 0.4) {
+            liveCell.className = "w-full h-4 rounded-sm transition-colors duration-300 bg-green-700 border border-white";
+        } 
+        else {
+            liveCell.className = "w-full h-4 rounded-sm transition-colors duration-300 bg-green-950 border border-white";
+        }
+    }
+}
+
+// C. MANUAL UPDATE HELPER (Required for Averages)
+function updateManual(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.innerText = value;
+        el.style.color = '#60a5fa'; // Flash Blue
+        setTimeout(() => el.style.color = '', 300);
+    }
+}
+
+// D. UNIT HELPER
+function getUnit(key) {
+    if (key.includes('voltage')) return ' V';
+    if (key.includes('current')) return ' A';
+    if (key.includes('Power') || key.includes('power')) return ' kW';
+    if (key.includes('kwh')) return ' kWh';
+    if (key.includes('freq')) return ' Hz';
+    if (key.includes('temp')) return ' °C';
+    return '';
+}
+
+// f. INITIALIZE ON LOAD
+window.onload = function() {
+    generateHeatmap(); // Build the grid immediately
+    
+    // ... Any other init functions can go here ...
+};
+    // --- 6. NAVIGATION & UI LOGIC ---
+
+    // Logout Logic
+    function logout() { localStorage.removeItem('user'); window.location.href = '/'; }
+    
+    // Auth Check
+    (function() { if (!localStorage.getItem('user')) window.location.href = '/'; })();
+
+
+    // --- 7. REPORTS & AUDIT LOGIC (Existing Features Preserved) ---
+   // --- UPDATED FETCH FUNCTION ---
+// 1. Navigation Logic: Make the Tab Active
+
+
+// 2. Data Connection Logic: Fetch from Database
+async function fetchRangeAudit() {
+    // Auto-close dropdown
+    const dropdown = document.getElementById('column-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    const startDate = document.getElementById('audit-start-date').value;
+    const endDate = document.getElementById('audit-end-date').value;
+    const shift = document.getElementById('shift-filter').value;
+    const spinner = document.getElementById('loading-spinner');
+
+    if (!startDate || !endDate) {
+        alert("📊 Please select a date range first.");
+        return;
+    }
+
+    if(spinner) spinner.classList.remove('hidden');
+
+    try {
+        // CALL REAL SERVER API
+        const response = await fetch(`/api/history?start=${startDate}T00:00:00.000Z&end=${endDate}T23:59:59.999Z`);
+        const rawData = await response.json();
+
+        if (!Array.isArray(rawData) || rawData.length === 0) {
+            alert("No data found for this period in the database.");
+            fullAuditData = [];
+            renderAuditTable([]);
+            return;
+        }
+
+        // Apply Shift Logic
+        fullAuditData = rawData.filter(row => {
+            if (shift === 'all') return true;
+            const hour = new Date(row.timestamp).getHours();
+            if (shift === 'A') return hour >= 6 && hour < 14;
+            if (shift === 'B') return hour >= 14 && hour < 22;
+            if (shift === 'C') return hour >= 22 || hour < 6;
+            return true;
+        });
+        
+        // Update UI
+        updateAuditSummary(fullAuditData);
+        currentPage = 1;
+        renderAuditTable(fullAuditData);
+
+    } catch (err) {
+        console.error("Database Fetch Error:", err);
+        alert("Failed to connect to the server.");
+    } finally {
+        if(spinner) spinner.classList.add('hidden');
+    }
+      currentPage = 1; // ALWAYS reset to page 1 on new search
+    renderAuditTable(fullAuditData);
+    updatePaginationButtons(Math.ceil(fullAuditData.length / itemsPerPage));
+}
+   function openPaymentPortal(plan, price) {
+        const portal = document.getElementById('payment-portal');
+        document.getElementById('checkout-plan-name').innerText = plan;
+        document.getElementById('checkout-price').innerText = `₹ ${price.toLocaleString()}`;
+        portal.classList.remove('hidden');
+    }
+
+    function processUpgrade() {
+        alert("Payment Authorized! Welcome to Enterprise.");
+        const user = { plan: document.getElementById('checkout-plan-name').innerText, expiry: new Date().toISOString() };
+        localStorage.setItem('nexusUser', JSON.stringify(user));
+        document.getElementById('payment-portal').classList.add('hidden');
+        updateSubscriptionUI();
+    }
+
+    function updateSubscriptionUI() {
+        const user = JSON.parse(localStorage.getItem('nexusUser') || '{"plan":"Essential"}');
+        const badge = document.getElementById('current-plan-badge');
+        if(badge) badge.innerText = `Plan: ${user.plan}`;
+    }
+
+window.changePage = function(direction) {
+    // 1. Calculate total pages
+    const totalPages = Math.ceil(fullAuditData.length / itemsPerPage);
+    const newPage = currentPage + direction;
+
+    // 2. Validate boundaries
+    if (newPage < 1 || newPage > totalPages) {
+        console.log(`⚠️ Page ${newPage} is out of bounds (1-${totalPages})`);
+        return; // Don't proceed if invalid
+    }
+
+    // 3. Update current page
+    currentPage = newPage;
+    
+    // 4. Re-render table
+    renderAuditTable(fullAuditData);
+    
+    // 5. Update button states
+    updatePaginationButtons(totalPages);
+    
+    // 6. Update page indicator
+    const indicator = document.getElementById('page-indicator');
+    if(indicator) indicator.innerText = `PAGE ${currentPage} OF ${totalPages}`;
+    
+    console.log(`✅ Navigated to Page ${currentPage}/${totalPages}`);
+};
+
+// NEW HELPER FUNCTION: Disable/Enable buttons based on current page
+function updatePaginationButtons(totalPages) {
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = (currentPage === 1);
+        prevBtn.style.opacity = (currentPage === 1) ? '0.3' : '1';
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = (currentPage === totalPages);
+        nextBtn.style.opacity = (currentPage === totalPages) ? '0.3' : '1';
+    }
+}
+// alarms 
+function toggleAlarmView(view) {
+    const views = {
+        dashboard: document.getElementById('alarm-view-dashboard'),
+        archive: document.getElementById('alarm-view-archive'),
+        settings: document.getElementById('alarm-view-settings')
+    };
+
+    const buttons = {
+        dashboard: document.getElementById('btn-alarm-dash'),
+        archive: document.getElementById('btn-alarm-arch'),
+        settings: document.getElementById('btn-alarm-sett')
+    };
+
+    const slider = document.getElementById('alarm-nav-slider');
+
+    // 1. Reset all views and button text colors
+    Object.values(views).forEach(v => v?.classList.add('hidden'));
+    Object.values(buttons).forEach(b => {
+        if(b) b.classList.replace('text-white', 'text-gray-500');
+    });
+
+    // 2. Show the selected view and highlight button
+    if (views[view]) views[view].classList.remove('hidden');
+    if (buttons[view]) buttons[view].classList.replace('text-gray-500', 'text-white');
+
+    // 3. Precise Slider Positioning
+    if (view === 'dashboard') slider.style.transform = "translateX(0)";
+    if (view === 'archive')   slider.style.transform = "translateX(140px)";
+    if (view === 'settings')  slider.style.transform = "translateX(280px)";
+}
+// Initialize with your default values from the HTML
+let currentThresholds = {
+    vOV: 456, vUV: 373, vImb: 3,
+    iOC: 110, iImb: 15, iNeu: 40,
+    allottedLoad: 500, pfCrit: 0.90
+};
+
+function saveAllThresholds() {
+    const btn = document.getElementById('commit-btn');
+    
+    // Capture the current values from the Matrix inputs
+    currentThresholds = {
+        vOV: parseFloat(document.getElementById('v-ov').value),
+        vUV: parseFloat(document.getElementById('v-uv').value),
+        vImb: parseFloat(document.getElementById('v-imb').value),
+        iOC: parseFloat(document.getElementById('i-oc').value),
+        iImb: parseFloat(document.getElementById('i-imb').value),
+        iNeu: parseFloat(document.getElementById('i-neu').value),
+        allottedLoad: parseFloat(document.getElementById('allotted-load').value),
+        pfCrit: parseFloat(document.getElementById('pf-lag').value)
+    };
+
+    console.log("Safety Protocol Committed:", currentThresholds);
+
+    // Visual Feedback
+    btn.innerHTML = "<span>✓ PROTOCOL COMMITTED</span>";
+    btn.classList.replace('bg-red-600', 'bg-emerald-600');
+    
+    setTimeout(() => {
+        btn.innerText = "Commit Safety Boundaries";
+        btn.classList.replace('bg-emerald-600', 'bg-red-600');
+    }, 2000);
+}
+// --- PRODUCTION HISTORY LOGIC (Charts + Heatmap + Density) ---
+let isLiveMode = true; 
+// --- TIME RANGE HANDLER (Corrected Path) ---
+async function updateTimeRange(range) {
+    console.log(`Switching to range: ${range}`);
+
+    // 1. UI RESETS (Buttons & Styles)
+    const btnLive = document.getElementById('btn-live');
+    const btn1h = document.getElementById('btn-1h');
+    const btn24h = document.getElementById('btn-24h'); // New
+    const btn7d = document.getElementById('btn-7d');
+    const btn30d = document.getElementById('btn-30d');
+    
+    const baseStyle = "whitespace-nowrap px-4 py-2 text-xs font-bold text-gray-500 hover:text-white transition-all";
+    const activeStyle = "whitespace-nowrap px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg transition-all shadow-lg shadow-blue-500/20";
+    
+    // Reset all styles
+    [btnLive, btn1h, btn24h, btn7d, btn30d].forEach(btn => {
+        if(btn) btn.className = baseStyle;
+    });
+
+    // 2. CLEAR OLD DATA
+    if(mainAnalyticsChart) {
+        mainAnalyticsChart.data.labels = [];
+        mainAnalyticsChart.data.datasets.forEach(ds => ds.data = []);
+    }
+    if(loadDensityChart) {
+        loadDensityChart.data.labels = [];
+        loadDensityChart.data.datasets[0].data = [];
+    }
+    if(correlationChartInstance) {
+        correlationChartInstance.data.datasets[0].data = [];
+    }
+    
+    // Reset Heatmap
+    for(let i=0; i<168; i++) {
+        const cell = document.getElementById(`hm-cell-${i}`);
+        if(cell) {
+            cell.className = "w-full h-4 rounded-sm transition-colors duration-500 bg-slate-800 border-none";
+            cell.title = "No Data";
+        }
+    }
+
+    // 3. LOGIC SWITCH
+    if (range === 'live') {
+        if(btnLive) btnLive.className = activeStyle;
+        isLiveMode = true;
+        console.log("🔴 Switched to LIVE Mode");
+    } 
+    else {
+        isLiveMode = false;
+        
+        // Highlight Active Button
+        if(range === '1h' && btn1h) btn1h.className = activeStyle;
+        if(range === '24h' && btn24h) btn24h.className = activeStyle;
+        if(range === '7d' && btn7d) btn7d.className = activeStyle;
+        if(range === '30d' && btn30d) btn30d.className = activeStyle;
+
+        try {
+            const response = await fetch(`/api/history?range=${range}`);
+            const dbData = await response.json();
+
+            if (!Array.isArray(dbData) || dbData.length === 0) {
+                console.warn("⚠️ Database is empty for this range.");
+                return;
+            }
+
+            // B. UPDATE MAIN ANALYTICS CHART
+            dbData.forEach(d => {
+                const dateObj = new Date(d.timestamp);
+                // For 1h and 24h, show Time. For 7d+, show Date + Time.
+                const label = (range === '1h' || range === '24h') 
+                    ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : dateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' });
+                
+                mainAnalyticsChart.data.labels.push(label);
+                mainAnalyticsChart.data.datasets[0].data.push(d.active_power);
+                mainAnalyticsChart.data.datasets[1].data.push(d.apparent_power);
+            });
+            mainAnalyticsChart.update();
+
+            // C. UPDATE HEATMAP
+            const totalCells = 168;
+            const startIndex = Math.max(0, totalCells - dbData.length);
+            dbData.forEach((d, index) => {
+                const cellIndex = startIndex + index;
+                if (cellIndex < totalCells) {
+                    const cell = document.getElementById(`hm-cell-${cellIndex}`);
+                    if (cell) {
+                        const intensity = Math.min(parseFloat(d.active_power) / 250, 1.0);
+                        if (intensity > 0.9) cell.className = "w-full h-4 rounded-sm bg-green-400 shadow-[0_0_10px_#4ade80]";
+                        else if (intensity > 0.7) cell.className = "w-full h-4 rounded-sm bg-green-500";
+                        else if (intensity > 0.4) cell.className = "w-full h-4 rounded-sm bg-green-700";
+                        else cell.className = "w-full h-4 rounded-sm bg-green-950";
+                        cell.title = `${new Date(d.timestamp).toLocaleString()}: ${d.active_power} kW`;
+                    }
+                }
+            });
+
+            // D. UPDATE LOAD DENSITY CHART (Bar)
+            if(loadDensityChart) {
+                if (range === '1h' || range === '24h') {
+                    // Hourly distribution for 24h, Minute distribution for 1h
+                    loadDensityChart.data.labels = dbData.map(d => new Date(d.timestamp).getHours() + ":00");
+                    loadDensityChart.data.datasets[0].data = dbData.map(d => d.active_power);
+                    loadDensityChart.data.datasets[0].label = "Power (kW)";
+                } else {
+                    // Daily aggregation for 7d/30d
+                    const dailyEnergy = {};
+                    dbData.forEach(d => {
+                        const dayKey = new Date(d.timestamp).toLocaleDateString([], {weekday: 'short', day: 'numeric'});
+                        dailyEnergy[dayKey] = (dailyEnergy[dayKey] || 0) + parseFloat(d.active_power);
+                    });
+                    loadDensityChart.data.labels = Object.keys(dailyEnergy);
+                    loadDensityChart.data.datasets[0].data = Object.values(dailyEnergy);
+                    loadDensityChart.data.datasets[0].label = "Energy (kWh)";
+                }
+                loadDensityChart.update();
+            }
+
+            // E. UPDATE CORRELATION CHART
+            if (correlationChartInstance) {
+                correlationChartInstance.data.datasets[0].data = dbData.map(d => ({
+                    x: parseFloat(d.voltage_r || 0), 
+                    y: parseFloat(d.power_factor || 0)
+                }));
+                correlationChartInstance.update();
+            }
+
+        } catch (err) {
+            console.error("❌ History API Error:", err);
+        }
+    }
+}
+async function syncTariffUI() {
+    try {
+        const res = await fetch('/api/billing/summary');
+        if (!res.ok) throw new Error("Server response not OK");
+        
+        const data = await res.json();
+        
+        if (data?.config) {
+            const cfg = data.config;
+            
+            // Helper function to safely set values
+            const safeSet = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+
+            // Update Shift A
+            safeSet('shift-a-start', cfg.shifts?.A?.start || "06:00");
+            safeSet('shift-a-end',   cfg.shifts?.A?.end   || "14:00");
+            safeSet('shift-a-rate',  cfg.shifts?.A?.rate  || 7.50);
+            
+            // Update Shift B
+            safeSet('shift-b-start', cfg.shifts?.B?.start || "14:00");
+            safeSet('shift-b-end',   cfg.shifts?.B?.end   || "22:00");
+            safeSet('shift-b-rate',  cfg.shifts?.B?.rate  || 11.20);
+            
+            // Update Shift C
+            safeSet('shift-c-start', cfg.shifts?.C?.start || "22:00");
+            safeSet('shift-c-end',   cfg.shifts?.C?.end   || "06:00");
+            safeSet('shift-c-rate',  cfg.shifts?.C?.rate  || 5.80);
+            
+            // Update Fixed Charges
+            safeSet('fixed-contract-demand', cfg.fixed?.contractDemand || 500);
+            safeSet('fixed-demand-charge',   cfg.fixed?.demandCharge   || 280);
+            safeSet('fixed-tax-rate',        cfg.fixed?.tax            || 18);
+            
+            // Also update the global memory object so live billing stays accurate
+            window.TARIFF_CONFIG = cfg;
+
+            console.log("✅ Tariff UI successfully hydrated from Database");
+        }
+    } catch(e) {
+        console.error("❌ Sync Failed:", e);
+    }
+}
+// === MASTER TAB NAVIGATION FUNCTION ===
+// Place this ONCE in your code (around line 2850, delete the other two)
+window.showTab = function(event, tabId) {
+    console.log(`🔄 Switching to tab: ${tabId}`);
+    
+    // 1. Hide all tab content sections
+    document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // 2. Deactivate all sidebar navigation items
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 3. Show the selected tab
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.classList.add('active');
+        
+        // === TAB-SPECIFIC INITIALIZATION ===
+        
+        // A. Analytics Tab: Resize charts
+        if (tabId === 'analytics') {
+            setTimeout(() => {
+                if (mainAnalyticsChart) mainAnalyticsChart.resize();
+                if (correlationChartInstance) correlationChartInstance.resize();
+                if (loadDensityChart) loadDensityChart.resize();
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
+        }
+
+        // B. Reports Tab: Build column selector
+        if (tabId === 'Reports') {
+            console.log("📑 Reports Tab Active: Initializing UI...");
+            renderColumnSelector(); 
+        }
+
+        // C. Tariffs Tab: Sync database values
+        if (tabId === 'tariffs') {
+            console.log("📂 Tariffs Tab Active: Syncing with Database...");
+            setTimeout(() => syncTariffUI(), 100);
+        }
+    } else {
+        console.error(`❌ Tab not found: ${tabId}`);
+    }
+
+    // 4. Highlight the clicked sidebar button
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
+};
+// --- DYNAMIC COLUMN CONFIGURATION ---
+// 1. Define all available parameters (ID -> Display Name)
+// --- DYNAMIC COLUMN CONFIGURATION (FULL 23 PARAMETERS) ---
+const ALL_COLUMNS = [
+    // 1. Time (Locked)
+    { id: 'timestamp', label: 'Timestamp', locked: true, selected: true },
+
+    // 2. Voltages (Phase & THD)
+    { id: 'voltage_r', label: 'Voltage R (V)', selected: true },
+    { id: 'voltage_y', label: 'Voltage Y (V)', selected: false },
+    { id: 'voltage_b', label: 'Voltage B (V)', selected: false },
+    { id: 'v_thd_r', label: 'V-THD R (%)', selected: false },
+    { id: 'v_thd_y', label: 'V-THD Y (%)', selected: false },
+    { id: 'v_thd_b', label: 'V-THD B (%)', selected: false },
+
+    // 3. Currents (Phase, Neutral & THD)
+    { id: 'current_r', label: 'Current R (A)', selected: true },
+    { id: 'current_y', label: 'Current Y (A)', selected: false },
+    { id: 'current_b', label: 'Current B (A)', selected: false },
+    { id: 'current_n', label: 'Current Neutral (A)', selected: false },
+    { id: 'i_thd_r', label: 'I-THD R (%)', selected: false },
+    { id: 'i_thd_y', label: 'I-THD Y (%)', selected: false },
+    { id: 'i_thd_b', label: 'I-THD B (%)', selected: false },
+
+    // 4. Power
+    { id: 'active_power', label: 'Active Power (kW)', selected: true },
+    { id: 'apparent_power', label: 'Apparent Power (kVA)', selected: true },
+    { id: 'reactive_power', label: 'Reactive Power (kVAr)', selected: true },
+    { id: 'power_factor', label: 'Power Factor', selected: true },
+    { id: 'frequency', label: 'Frequency (Hz)', selected: true },
+
+    // 5. Energy Counters
+    { id: 'energy_kwh', label: 'Energy Active (kWh)', selected: false },
+    { id: 'energy_kvah', label: 'Energy Apparent (kVAh)', selected: false },
+    { id: 'energy_kvarh', label: 'Energy Reactive (kVArh)', selected: false },
+
+    // 6. Device Health
+    { id: 'meter_temperature', label: 'Meter Temp (°C)', selected: false }
+];
+
+// 2. Initialize Dropdown on Load
+document.addEventListener('DOMContentLoaded', () => {
+    renderColumnSelector();
+    // ... (Keep your existing date initialization)
+});
+
+// 3. Render the Checkboxes inside Dropdown
+function renderColumnSelector() {
+    const container = document.getElementById('column-list');
+    container.innerHTML = ALL_COLUMNS.map(col => `
+        <label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800 cursor-pointer transition-colors">
+            <input type="checkbox" 
+                   class="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-offset-slate-900"
+                   ${col.selected ? 'checked' : ''} 
+                   ${col.locked ? 'disabled' : ''}
+                   onchange="toggleColumn('${col.id}')">
+            <span class="text-xs text-slate-300 font-medium ${col.locked ? 'opacity-50' : ''}">${col.label}</span>
+        </label>
+    `).join('');
+}
+
+// 4. Handle Toggle
+function toggleColumn(id) {
+    const col = ALL_COLUMNS.find(c => c.id === id);
+    if (col) col.selected = !col.selected;
+    
+    // Re-render table immediately if data exists
+    if(fullAuditData.length > 0) renderAuditTable(fullAuditData);
+}
+
+function toggleColumnDropdown(event) {
+    if(event) event.stopPropagation(); // Prevents immediate closing
+    const dropdown = document.getElementById('column-dropdown');
+    dropdown.classList.toggle('hidden');
+}
+// --- UPDATED RENDER FUNCTION (Dynamic Columns) ---
+// --- UPDATED RENDER FUNCTION (Dynamic Columns) ---
+function renderAuditTable(data) {
+    const tableHeadRow = document.getElementById('audit-table-header');
+    const tableBody = document.getElementById('audit-table-body');
+    const activeCols = ALL_COLUMNS.filter(c => c.selected);
+
+    // 2. Clear previous content
+    if (tableHeadRow) {
+        tableHeadRow.innerHTML = activeCols.map(col => 
+            `<th class="p-4 font-semibold text-slate-400 uppercase tracking-wider">${col.label}</th>`
+        ).join('') + `<th class="p-4 text-right">Status</th>`;
+    }
+
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="${activeCols.length + 1}" class="p-8 text-center text-slate-500 font-bold uppercase">No database records found for this range</td></tr>`;
+        return;
+    }
+    
+    // 3. Calculation for the 25 rows
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const endIdx = Math.min(startIdx + itemsPerPage, data.length);
+    const pageData = data.slice(startIdx, endIdx);
+    
+    console.log(`Rendering Page ${currentPage}: showing ${pageData.length} rows`);
+
+    pageData.forEach(row => {
+        const tr = document.createElement('tr');
+        // Reduce padding from p-4 to p-2.5 to fit 25 rows on screen
+        tr.className = 'hover:bg-blue-500/5 border-b border-slate-800/30 transition-colors duration-150';
+        
+        let cellsHtml = activeCols.map(col => {
+            let val = row[col.id]; 
+            if(col.id === 'timestamp') return `<td class="p-2.5 text-slate-400 font-mono text-[10px]">${new Date(val).toLocaleString()}</td>`;
+            
+            // Fallback & Math
+            if(val === undefined || val === null) {
+                if(col.id === 'reactive_power') {
+                     const kva = row.apparent_power || 0;
+                     const kw = row.active_power || 0;
+                     val = Math.sqrt(Math.max(0, (kva*kva) - (kw*kw)));
+                } else { val = 0; }
+            }
+            
+            let colorClass = "text-slate-300";
+            if(col.id.includes('voltage')) colorClass = "text-blue-400 font-bold";
+            if(col.id.includes('current')) colorClass = "text-amber-400 font-bold";
+            if(col.id.includes('active')) colorClass = "text-emerald-400 font-bold";
+
+            return `<td class="p-2.5 ${colorClass}">${typeof val === 'number' ? val.toFixed(col.id.includes('factor') ? 3 : 2) : val}</td>`;
+        }).join('');
+
+        const pf = parseFloat(row.power_factor || 0);
+        let status = pf < 0.85 
+            ? `<span class="px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-bold">POOR PF</span>`
+            : `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-bold">OPTIMAL</span>`;
+
+        tr.innerHTML = cellsHtml + `<td class="p-2.5 text-right">${status}</td>`;
+        tableBody.appendChild(tr);
+    });
+    
+    document.getElementById('current-range').innerText = `${startIdx + 1}-${endIdx} of ${data.length}`;
+     const totalPages = Math.ceil(data.length / itemsPerPage);
+    updatePaginationButtons(totalPages);
+    
+    // Update page indicator
+    const indicator = document.getElementById('page-indicator');
+    if(indicator) indicator.innerText = `PAGE ${currentPage} OF ${totalPages}`;
+}
+// --- UPDATED EXPORT PDF (Dynamic) ---
+async function generatePDF() {
+    console.log("PDF Generation Started...");
+    
+    // 1. Data Validation
+    if (!fullAuditData || fullAuditData.length === 0) {
+        alert("Please click 'GENERATE' to load data before downloading.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const isSummaryOnly = document.getElementById('pdf-summary-only')?.checked;
+    
+    // 2. Plugin Registration
+    if (typeof jsPDF.API.autoTable !== 'function') {
+        const plugin = window.jspdfAutotable || window.autoTable;
+        if (plugin) {
+            if (typeof plugin.default === 'function') plugin.default(jsPDF);
+            else if (typeof plugin === 'function') plugin(jsPDF);
+        } else {
+            alert("PDF Table Plugin missing. Check your connection.");
+            return;
+        }
+    }
+
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const primaryColor = [15, 23, 42]; 
+
+    try {
+        // --- PAGE 1: HEADER & MAIN DATA (IF NOT SUMMARY ONLY) ---
+        const drawHeader = (title) => {
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 297, 35, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text(title, 15, 18);
+            
+            const peak = document.getElementById('report-peak-md')?.innerText || "0.0 kVA";
+            const pf = document.getElementById('report-avg-pf')?.innerText || "0.000";
+            const energy = document.getElementById('report-total-kwh')?.innerText || "0.0 kWh";
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Executive Summary | Peak: ${peak} | Avg PF: ${pf} | Total Energy: ${energy}`, 15, 28);
+        };
+
+        drawHeader(isSummaryOnly ? "NEXUSGRID EXECUTIVE SUMMARY" : "NEXUSGRID FULL AUDIT REPORT");
+
+        const activeCols = ALL_COLUMNS.filter(c => c.selected);
+
+        if (!isSummaryOnly) {
+            // Prepare Row Data
+            const tableHeaders = [activeCols.map(col => col.label.toUpperCase())];
+            const tableRows = fullAuditData.map(row => {
+                return activeCols.map(col => {
+                    let val = row[col.id];
+                    if (col.id === 'timestamp') return new Date(val).toLocaleString();
+                    if (typeof val === 'number') return val.toFixed(col.id.includes('factor') ? 3 : 2);
+                    return val || '0.00';
+                });
+            });
+
+            // Main Data Table
+            doc.autoTable({
+                head: tableHeaders,
+                body: tableRows,
+                startY: 42,
+                theme: 'striped',
+                headStyles: { fillColor: primaryColor, fontSize: 8, fontStyle: 'bold', halign: 'center' },
+                bodyStyles: { fontSize: 7, textColor: [30, 41, 59], halign: 'center' },
+                margin: { left: 15, right: 15 },
+                didParseCell: function(data) {
+                    if (data.section === 'body') {
+                        const headerObj = data.column.raw || "";
+                        const headerText = String(headerObj).toLowerCase();
+                        if (headerText.includes('factor')) {
+                            const pfValue = parseFloat(data.cell.text);
+                            if (!isNaN(pfValue) && pfValue < 0.85) {
+                                data.cell.styles.textColor = [220, 38, 38];
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    }
+                }
+            });
+            doc.addPage();
+            drawHeader("ANALYTICAL STATISTICS SUMMARY");
+        }
+
+        // --- SUMMARY STATISTICS PAGE ---
+        const statsHeaders = [["PARAMETER", "MINIMUM", "MAXIMUM", "AVERAGE", "UNIT"]];
+        const statsRows = activeCols.filter(c => c.id !== 'timestamp').map(col => {
+            const values = fullAuditData.map(d => parseFloat(d[col.id])).filter(v => !isNaN(v));
+            if (values.length === 0) return [col.label, "-", "-", "-", "-"];
+            
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            let unit = "-";
+            if(col.id.includes('voltage')) unit = "V";
+            else if(col.id.includes('current')) unit = "A";
+            else if(col.id.includes('power')) unit = "kW";
+            else if(col.id.includes('factor')) unit = "cosφ";
+
+            return [col.label, min.toFixed(2), max.toFixed(2), avg.toFixed(2), unit];
+        });
+
+        doc.autoTable({
+            head: statsHeaders,
+            body: statsRows,
+            startY: isSummaryOnly ? 45 : 45,
+            theme: 'grid',
+            headStyles: { fillColor: [51, 65, 85], halign: 'center' },
+            styles: { fontSize: 8, halign: 'center', cellPadding: 4 },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 } }
+        });
+
+        // Footer & Signature
+        const finalY = doc.lastAutoTable.finalY + 30;
+        if (finalY < 180) {
+            doc.setDrawColor(200, 200, 200);
+            doc.line(15, finalY, 80, finalY);
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text("AUTHORIZED SITE ENGINEER SIGNATURE", 15, finalY + 5);
+        }
+
+        doc.save(`NexusGrid_${isSummaryOnly ? 'Summary' : 'FullAudit'}_${Date.now()}.pdf`);
+        console.log("PDF Process Complete ✅");
+
+    } catch (error) {
+        console.error("Detailed PDF Error:", error);
+        alert("An error occurred. Check console (F12).");
+    }
+}
+/**
+ * Updates the Executive Summary Cards (Peak, Efficiency, Energy)
+ * at the top of the Reports/Audit tab.
+ */
+function updateAuditSummary(data) {
+    const peakEl = document.getElementById('report-peak-md');
+    const avgPFEl = document.getElementById('report-avg-pf');
+    const totalKWHEl = document.getElementById('report-total-kwh');
+    const countEl = document.getElementById('total-count');
+
+    // Reset UI if no data is found
+    if (!data || data.length === 0) {
+        if(countEl) countEl.innerText = "0";
+        if(peakEl) peakEl.innerHTML = `---.- <span class="text-sm text-blue-400">kVA</span>`;
+        if(avgPFEl) avgPFEl.innerText = "-.---";
+        if(totalKWHEl) totalKWHEl.innerHTML = `--- <span class="text-sm text-violet-400">kWh</span>`;
+        return;
+    }
+
+    try {
+        // 1. Peak Demand: Find the highest Apparent Power (kVA)
+        const peakKVA = Math.max(...data.map(d => parseFloat(d.apparent_power || 0)));
+        
+        // 2. Average Efficiency: Calculate mean Power Factor
+        const avgPF = data.reduce((sum, d) => sum + parseFloat(d.power_factor || 0), 0) / data.length;
+        
+        // 3. Energy Consumed: Estimate kWh (Sum of kW / 60, assuming 1-min samples)
+        const totalKWSum = data.reduce((sum, d) => sum + parseFloat(d.active_power || 0), 0);
+        const totalKWH = totalKWSum / 60; 
+
+        // Update the UI HTML
+        if (peakEl) peakEl.innerHTML = `${peakKVA.toFixed(1)} <span class="text-sm text-blue-400">kVA</span>`;
+        if (avgPFEl) avgPFEl.textContent = avgPF.toFixed(3);
+        if (totalKWHEl) totalKWHEl.innerHTML = `${totalKWH.toFixed(1)} <span class="text-sm text-violet-400">kWh</span>`;
+        if (countEl) countEl.textContent = data.length.toLocaleString();
+        
+        console.log("Summary Cards Updated Successfully");
+    } catch (err) {
+        console.error("Error in updateAuditSummary logic:", err);
+    }
+}
+// --- 1. GLOBAL STATE TRACKING ---
+// We use a Map to keep track of active threats so we know when they are resolved
+let activeThreats = new Map();
+
+/**
+ * Switch between the 'Safety Feed' (Live Alarms) 
+ * and 'Safety Limits' (Matrix Configuration)
+ */
+function toggleAlarmView(view) {
+    // 1. Map Keys to HTML Element IDs
+    const viewMap = {
+        'dashboard': 'alarm-view-dashboard',
+        'archive': 'alarm-view-archive',
+        'settings': 'alarm-view-settings'
+    };
+
+    const buttonMap = {
+        'dashboard': 'btn-alarm-dash',
+        'archive': 'btn-alarm-arch',
+        'settings': 'btn-alarm-sett'
+    };
+
+    // 2. Map Keys to Slider Positions (Multiples of 140px)
+    const sliderMap = {
+        'dashboard': '0px',
+        'archive': '140px',
+        'settings': '280px'
+    };
+
+    // 3. EXECUTE SWITCH
+    // Hide all views, then show only the one we clicked
+    Object.values(viewMap).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    document.getElementById(viewMap[view]).classList.remove('hidden');
+
+    // Update button colors (dim all, brighten one)
+    Object.values(buttonMap).forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.replace('text-white', 'text-gray-500');
+    });
+    document.getElementById(buttonMap[view]).classList.replace('text-gray-500', 'text-white');
+
+    // Move the red slider background
+    const slider = document.getElementById('alarm-nav-slider');
+    if (slider) {
+        slider.style.transform = `translateX(${sliderMap[view]})`;
+    }
+}
+
+/**
+ * Reads UI inputs and evaluates incoming telemetry data.
+ * No hardcoded limits; it uses the Matrix values live.
+ */
+// Add this inside your <script> tag in dashboard.html
+function evaluateSafety(data) {
+    const activeList = document.getElementById('active-list');
+    const resolvedList = document.getElementById('resolved-list');
+    const countBadge = document.getElementById('active-count');
+    
+    // 1. Capture Dynamic Limits from your Matrix UI
+    const limits = {
+        vOV: parseFloat(document.getElementById('v-ov')?.value) || 456,
+        vUV: parseFloat(document.getElementById('v-uv')?.value) || 373,
+        vImb: parseFloat(document.getElementById('v-imb')?.value) || 3,
+        iOC: parseFloat(document.getElementById('i-oc')?.value) || 110,
+        iImb: parseFloat(document.getElementById('i-imb')?.value) || 15,
+        allottedLoad: parseFloat(document.getElementById('allotted-load')?.value) || 500,
+        pfCrit: parseFloat(document.getElementById('pf-lag')?.value) || 0.90
+    };
+
+    let detectedNow = [];
+    const timestamp = new Date().toLocaleTimeString();
+
+    // 2. RUN DETECTION LOGIC
+    // Over-Voltage
+    if (parseFloat(data.voltage_r) > limits.vOV) {
+        detectedNow.push({ id: 'OV', title: `Over-Voltage: ${data.voltage_r}V`, level: 'CRITICAL' });
+    }
+    // Under-Voltage
+    if (parseFloat(data.voltage_r) < limits.vUV) {
+        detectedNow.push({ id: 'UV', title: `Under-Voltage: ${data.voltage_r}V`, level: 'WARNING' });
+    }
+    // Load Management
+    if (parseFloat(data.apparent_power) > limits.allottedLoad) {
+        detectedNow.push({ id: 'LOAD', title: `Load Exceeded: ${data.apparent_power}kVA`, level: 'DANGER' });
+    }
+    // Critical Power Factor
+    if (parseFloat(data.power_factor) < limits.pfCrit) {
+        detectedNow.push({ id: 'PF', title: `Critical PF: ${data.power_factor}`, level: 'CRITICAL' });
+    }
+
+    // 3. MANAGE THREAT LIFECYCLE (Active vs Resolved)
+    // Check for Resolved Alarms: Existing in memory but not in 'detectedNow'
+    activeThreats.forEach((val, id) => {
+        if (!detectedNow.find(t => t.id === id)) {
+            const resolvedItem = document.createElement('div');
+            resolvedItem.className = "flex justify-between items-center bg-green-800/20 border border-green-500/20 p-3 rounded-lg shadow-inner animate-in fade-in slide-in-from-left-2";
+            resolvedItem.innerHTML = `
+                <span class="text-[10px] text-white font-medium">${val.title}</span>
+                <span class="text-[9px] text-green-400 font-black">RESOLVED @ ${timestamp}</span>
+            `;
+            resolvedList.prepend(resolvedItem);
+            activeThreats.delete(id);
+        }
+    });
+
+    // Add New Alarms to Memory
+    detectedNow.forEach(threat => {
+        if (!activeThreats.has(threat.id)) {
+            activeThreats.set(threat.id, threat);
+        }
+    });
+
+    // 4. RENDER UI
+    countBadge.innerText = `${activeThreats.size} ACTIVE`;
+    activeList.innerHTML = '';
+    
+    if (activeThreats.size === 0) {
+        activeList.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs italic">Shield Active: All Systems Nominal</div>';
+    } else {
+        activeThreats.forEach((threat) => {
+            const color = threat.level === 'WARNING' ? 'yellow' : 'red';
+            activeList.innerHTML += `
+                <div class="flex justify-between items-center bg-${color}-950/40 border border-${color}-500/30 p-3 rounded-lg shadow-inner">
+                    <div class="flex flex-col">
+                        <span class="text-xs text-white font-bold">${threat.title}</span>
+                        <span class="text-[9px] text-gray-500 uppercase">${timestamp}</span>
+                    </div>
+                    <span class="text-[10px] bg-${color}-600 px-2 py-0.5 rounded text-white font-black">${threat.level}</span>
+                </div>
+            `;
+        });
+    }
+}
+
+/**
+ * Visual feedback for 'Commit Safety Boundaries' button
+ */
+function saveAllThresholds() {
+    const btn = document.getElementById('commit-btn');
+    btn.innerHTML = "<span>✓ PROTOCOL COMMITTED</span>";
+    btn.classList.replace('bg-red-600', 'bg-emerald-600');
+    
+    setTimeout(() => {
+        btn.innerText = "Commit Safety Boundaries";
+        btn.classList.replace('bg-emerald-600', 'bg-red-600');
+    }, 2000);
+    
+    console.log("Safety Matrix updated via UI inputs.");
+}
+
+/**
+ * DATA BRIDGE: Call this whenever your live telemetry polling returns data
+ */
+// Start the real-time observer loop (Every 3 seconds)
+setInterval(fetchLatestAndEvaluate, 3000);
+// 1. LISTEN FOR REAL-TIME BROADCASTS
+// Listen for the broadcast from app.post('/api/telemetry')
+/**
+ * START SAFETY MONITORING SYSTEM
+ * This block ensures the alarms are checked on page load,
+ * every 3 seconds (polling), and instantly (websockets).
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("🛠️ NexusGrid Safety Engine: Online");
+    
+    // 1. Initial Page Load Check
+    fetchLatestAndEvaluate();
+
+    // 2. The 3-Second Backup (Polling)
+    setInterval(fetchLatestAndEvaluate, 3000);
+
+    // 3. Instant Updates from PowerShell
+    socket.on('new-data', (livePacket) => {
+        console.log("⚡ Instant Data Received:", livePacket);
+        
+        // Map the socket names to your evaluateSafety function
+        evaluateSafety({
+            voltage_r: livePacket.voltage_r,
+            power_factor: livePacket.powerFactor_avg,
+            apparent_power: livePacket.apparentPower_total
+        });
+    });
+});
+// 2. FALLBACK POLLING (To clear 404s and handle misses)
+async function fetchLatestAndEvaluate() {
+    try {
+        const response = await fetch('http://localhost:3000/api/telemetry/latest');
+        
+        // If the server says 404, the DB is just empty. This is NOT an error.
+        if (response.status === 404) return; 
+
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+        const data = await response.json();
+        if (data) {
+            // Map database column names to your Safety Evaluator
+            evaluateSafety({
+                voltage_r: data.voltage_r,
+                power_factor: data.power_factor,
+                apparent_power: data.apparent_power
+            });
+        }
+    } catch (err) {
+        // Silently wait for the server to be ready
+    }
+}
+// 1. Ensure Global Tracker exists (Put this at the top of your script)
+window.currentArchivePage = 1;
+
+// 2. Navigation Helper (Fixes the ReferenceError)
+window.changeArchivePage = function(direction) {
+    const targetPage = window.currentArchivePage + direction;
+    if (targetPage < 1) return;
+    fetchAlarmsByDate(targetPage);
+};
+
+// 3. The Main Fetch Engine
+async function fetchAlarmsByDate(page = 1) {
+    window.currentArchivePage = page; // Sync global state
+    
+    const searchDate = document.getElementById('alarm-archive-date').value;
+    const tableBody = document.getElementById('archive-table-body');
+    const paginationRow = document.getElementById('archive-pagination');
+
+    if (!searchDate) return alert("Select a date.");
+
+    // Loading State
+    tableBody.innerHTML = `<tr><td colspan="4" class="p-20 text-center text-indigo-400 animate-pulse text-[10px] font-bold uppercase">Scanning Database Page ${page}...</td></tr>`;
+
+    try {
+        // Fetch from API with pagination
+        const response = await fetch(`${API_URL}/alarms/archive?date=${searchDate}&page=${page}&limit=20`);
+        const data = await response.json();
+
+        // Access logs inside the object
+        const logs = data.logs || []; 
+        tableBody.innerHTML = '';
+
+        if (logs.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-gray-600 text-[10px] uppercase font-bold italic">Shield Status: No incidents recorded.</td></tr>';
+            if (paginationRow) paginationRow.classList.add('hidden');
+            return;
+        }
+
+        // Render Table Rows
+        logs.forEach(log => {
+            const time = new Date(log.created_at).toLocaleTimeString();
+            let faultLabel = "System Fault";
+            let valStr = `${log.voltage_r}V`;
+            let colorClass = "text-white";
+
+            // Threshold Logic for Labels
+            if (log.voltage_r > currentThresholds.vOV) {
+                faultLabel = "CRITICAL OVER-VOLTAGE";
+                colorClass = "text-red-400";
+            } else if (log.power_factor < currentThresholds.pfCrit) {
+                faultLabel = "EFFICIENCY DROP (LOW PF)";
+                valStr = log.power_factor;
+                colorClass = "text-orange-400";
+            } else if (log.apparent_power > currentThresholds.allottedLoad) {
+                faultLabel = "DEMAND OVERLOAD";
+                valStr = `${log.apparent_power} kVA`;
+                colorClass = "text-purple-400";
+            }
+
+            tableBody.innerHTML += `
+                <tr class="hover:bg-indigo-500/5 transition-colors border-b border-gray-800/20">
+                    <td class="p-4 text-gray-500 font-mono">${time}</td>
+                    <td class="p-4 font-bold ${colorClass}">${faultLabel}</td>
+                    <td class="p-4 text-center text-gray-300 font-bold">${valStr}</td>
+                    <td class="p-4 text-right">
+                        <span class="text-[9px] font-black text-green-500 bg-green-500/10 px-2 py-1 rounded">LOGGED</span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Update Pagination Controls
+        if (data.totalPages > 1) {
+            paginationRow.classList.remove('hidden');
+            document.getElementById('arch-page-info').innerText = `Page ${data.currentPage} of ${data.totalPages}`;
+            document.getElementById('arch-total-count').innerText = `${data.total} TOTAL INCIDENTS`;
+            
+            const nextBtn = document.getElementById('next-arch-btn');
+            const prevBtn = document.getElementById('prev-arch-btn');
+            
+            prevBtn.disabled = (data.currentPage === 1);
+            nextBtn.disabled = (data.currentPage === data.totalPages);
+        } else {
+            paginationRow.classList.add('hidden');
+        }
+
+    } catch (err) {
+        console.error("Archive Error:", err);
+        tableBody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-red-500 text-[10px] font-bold">DATABASE CONNECTION FAILED</td></tr>';
+    }
+}
+// --- GLOBAL TARIFF STATE ---
+// Initial values match your UI defaults
+let TARIFF_CONFIG = {
+    shifts: {
+        A: { start: 6,  end: 14, rate: 7.50 },
+        B: { start: 14, end: 22, rate: 11.20 },
+        C: { start: 22, end: 6,  rate: 5.80 }
+    },
+    fixed: {
+        contractDemand: 500,
+        demandCharge: 280,
+        tax: 18
+    }
+};
+
+/**
+ * Saves all Tariff and Shift settings from the UI to memory
+ */
+async function saveTariffSettings(e) {
+    // 1. Prevent page refresh
+    if (e) e.preventDefault();
+
+    console.log("💾 Initializing Tariff Secure Save...");
+    
+    // 2. Auth Check: Get token from localStorage
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert("🔒 Session Expired: Please login to modify industrial configurations.");
+        window.location.href = '/login.html';
+        return;
+    }
+
+    const btn = document.getElementById('save-tariff-btn');
+    const originalText = btn.innerHTML;
+
+    // 3. Capture all values from UI (IDs must match your HTML)
+    const settings = {
+        shifts: {
+            A: { 
+                start: document.getElementById('shift-a-start').value, 
+                rate: parseFloat(document.getElementById('shift-a-rate').value || 0) 
+            },
+            B: { 
+                start: document.getElementById('shift-b-start').value, 
+                rate: parseFloat(document.getElementById('shift-b-rate').value || 0) 
+            },
+            C: { 
+                start: document.getElementById('shift-c-start').value, 
+                rate: parseFloat(document.getElementById('shift-c-rate').value || 0) 
+            }
+        },
+        fixed: {
+            contractDemand: parseFloat(document.getElementById('fixed-contract-demand').value || 0),
+            demandCharge: parseFloat(document.getElementById('fixed-demand-charge').value || 0),
+            tax: parseFloat(document.getElementById('fixed-tax-rate').value || 0)
+        }
+    };
+
+    try {
+        // 4. UI Loading State
+        btn.innerHTML = "<span>⌛ ENCRYPTING & SENDING...</span>";
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+        // 5. PUSH TO DATABASE WITH BEARER AUTH
+        const response = await fetch('/api/settings/tariffs', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(settings)
+        });
+
+        const result = await response.json();
+
+        // 6. Handle Auth Errors (401/403)
+        if (response.status === 401 || response.status === 403) {
+            alert("❌ Unauthorized: Your session has expired or you lack administrative privileges.");
+            window.location.href = '/login.html';
+            return;
+        }
+
+        if (response.ok) {
+            // 7. Update Local Memory (Syncs live cards immediately)
+            window.TARIFF_CONFIG = settings;
+            
+            // 8. Success Feedback
+            btn.innerHTML = "<span>✅ CONFIG LOCKED TO DB</span>";
+            btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            console.log("✅ Industrial Config successfully synchronized:", result);
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+                btn.disabled = false;
+            }, 2500);
+        } else {
+            throw new Error(result.error || "Server rejected config update");
+        }
+
+    } catch (err) {
+        console.error("❌ Save failed:", err);
+        btn.innerHTML = "<span>❌ SAVE FAILED</span>";
+        btn.classList.replace('bg-blue-600', 'bg-red-600');
+        btn.disabled = false;
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.replace('bg-red-600', 'bg-blue-600');
+        }, 3000);
+        
+        alert("Critical System Error: Check network connection or server logs.");
+    }
+}
+// Listen for real-time financial updates from the server
+// Listen for real-time financial updates from the server
+/* FINANCIAL & BILLING CORE
+ * Syncs the UI with the PostgreSQL billing_state table
+ */
+socket.on('billing-update', (payload) => {
+    console.log("💰 Financial Update Received:", payload);
+
+    // 1. Accrued Bill (Emerald Card)
+    const costEl = document.getElementById('cost-energy');
+    const projectEl = document.querySelector('#financials .text-green-400.mt-3');
+    if (costEl) {
+        const totalBill = Number(payload.total_bill || 0);
+        costEl.innerText = `₹ ${totalBill.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`;
+
+        // Dynamic Cycle Projection (Linear estimation for 30 days)
+        if (projectEl && totalBill > 0) {
+            const daysElapsed = new Date().getDate(); 
+            const projected = (totalBill / daysElapsed) * 30;
+            projectEl.innerText = `Cycle Projection: ₹ ${projected.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        }
+    }
+
+    // 2. Efficiency Penalties (Red Card - The 1+ PF Logic)
+    const penaltyEl = document.getElementById('cost-penalty');
+    if (penaltyEl) {
+        const penalty = Number(payload.penalty_total || 0);
+        
+        // Handle Incentives (Negative values)
+        if (penalty < 0) {
+            penaltyEl.innerText = `- ₹ ${Math.abs(penalty).toFixed(2)}`;
+            penaltyEl.classList.replace('text-white', 'text-emerald-400'); // Turn text green for bonus
+        } else {
+            penaltyEl.innerText = `₹ ${penalty.toFixed(2)}`;
+            penaltyEl.classList.replace('text-emerald-400', 'text-white');
+        }
+
+        // Add a warning glow if penalties exceed ₹100
+        const card = penaltyEl.closest('.glass-card');
+        if (penalty > 100) {
+            card.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.4)";
+            card.style.borderColor = "rgba(239, 68, 68, 0.5)";
+        } else {
+            card.style.boxShadow = "";
+            card.style.borderColor = "";
+        }
+    }
+
+    // 3. Fixed Demand Cost (Blue Card)
+    const peakEl = document.getElementById('cost-md');
+    const peakText = document.getElementById('md-peak-text');
+    if (peakEl) {
+        peakEl.innerText = `₹ ${Number(payload.fixed_cost).toLocaleString(undefined, {
+            maximumFractionDigits: 0
+        })}`;
+        if(peakText) peakText.innerText = `MD Peak: ${Number(payload.peak_demand).toFixed(1)} kVA`;
+    }
+
+    // 4. Blended Unit Rate (Purple Card)
+   const rateEl = document.getElementById('avg-unit-rate');
+    if (rateEl) {
+        // Use the blended_rate from the server; fallback to active rate if no units consumed yet
+        const finalRate = payload.blended_rate > 0 ? payload.blended_rate : payload.current_rate;
+        
+        rateEl.innerText = `₹ ${Number(finalRate).toFixed(2)}`;
+        
+        // Logical styling: If penalties make the rate climb, color it purple-light
+        if (payload.blended_rate > payload.current_rate) {
+            rateEl.classList.add('text-purple-300');
+        }
+    }
+});
+// 1. Initial Load from Database (Runs on Refresh)
+let isSyncing = false; // The Safety Lock
+
+async function syncInitialBilling() {
+    const token = localStorage.getItem('authToken');
+    
+    try {
+        const res = await fetch('/api/billing-state', {
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // If the token is expired or invalid, the server will return 401
+        if (res.status === 401) {
+            localStorage.clear();
+            window.location.href = '/login.html';
+            return;
+        }
+
+        const data = await res.json();
+        updateFinancialCards(data); // Your function to update the UI
+        
+    } catch (err) {
+        console.error("Auth Fetch Error:", err);
+    }
+}
+// 3. Centralized UI Updater (Used by both Sync and Socket)
+function updateFinancialUI(data) {
+    const costEl = document.getElementById('cost-energy');
+    const peakEl = document.getElementById('cost-md');
+    const rateEl = document.getElementById('avg-unit-rate');
+    const projectEl = document.querySelector('#financials .text-green-400.mt-2');
+
+    // Convert values to Numbers immediately to prevent "toFixed" errors
+    const totalBill = Number(data.total_bill || 0);
+    const peakDemand = Number(data.peak_demand || 0);
+    const fixedCost = Number(data.fixed_cost || 0);
+    const currentRate = Number(data.current_rate || 0);
+
+    // 1. Update Accrued Bill
+    if (costEl) {
+        costEl.innerText = `₹ ${totalBill.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`;
+    }
+
+    // 2. Update Demand Cost (Peak * Rate)
+    if (peakEl) {
+        peakEl.innerText = `₹ ${fixedCost.toLocaleString(undefined, {
+            maximumFractionDigits: 0
+        })}`;
+        
+        // Use the safe peakDemand number here
+        const subText = peakEl.parentElement.querySelector('p.text-blue-400');
+        if(subText) {
+            subText.innerText = `MD Peak: ${peakDemand.toFixed(1)} kVA`;
+        }
+    }
+
+    // 3. Update Blended Rate Card
+    if (rateEl) {
+        rateEl.innerText = `₹ ${currentRate.toFixed(2)}`;
+    }
+
+    // 4. Update Cycle Projection
+    if (projectEl && totalBill > 0) {
+        const projection = totalBill * 30; 
+        projectEl.innerText = `Cycle Projection: ₹ ${projection.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+    }
+}
+async function executeShiftAudit() {
+    // 1. Capture Inputs
+    const startEl = document.getElementById('audit-start-date-1');
+    const endEl = document.getElementById('audit-end-date-1');
+    const resultsContainer = document.getElementById('audit-results-container');
+    const tableBody = document.getElementById('shift-audit-body');
+
+    if (!startEl?.value || !endEl?.value) {
+        alert("📊 Please select both start and end dates.");
+        return;
+    }
+
+    try {
+        // 2. Fetch Historical Telemetry
+        const res = await fetch(`/api/history?start=${startEl.value}T00:00:00.000Z&end=${endEl.value}T23:59:59.999Z`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+            alert("No telemetry data found for this period.");
+            return;
+        }
+
+        // 3. Initialize Buckets based on Live TARIFF_CONFIG
+        const analysis = {
+            A: { units: 0, cost: 0, cfg: TARIFF_CONFIG.shifts.A },
+            B: { units: 0, cost: 0, cfg: TARIFF_CONFIG.shifts.B },
+            C: { units: 0, cost: 0, cfg: TARIFF_CONFIG.shifts.C }
+        };
+
+        // 4. Process Every Data Point (kWh Calculation)
+        data.forEach(point => {
+            const hour = new Date(point.timestamp).getHours();
+            const kw = parseFloat(point.active_power || 0);
+            
+            // Assuming 1-minute logging interval (kW / 60 = kWh)
+            const kwh = kw / 60; 
+
+            // Logic for Shift Selection
+            let shiftKey = 'A';
+            const sB = analysis.B.cfg;
+            const sC = analysis.C.cfg;
+
+            if (hour >= parseInt(sB.start) && hour < parseInt(sB.end)) {
+                shiftKey = 'B';
+            } else if (hour >= parseInt(sC.start) || hour < parseInt(sC.end)) {
+                shiftKey = 'C';
+            }
+
+            analysis[shiftKey].units += kwh;
+            analysis[shiftKey].cost += (kwh * parseFloat(analysis[shiftKey].cfg.rate));
+        });
+
+        // 5. Render to UI
+        tableBody.innerHTML = '';
+        let grandTotalUnits = 0;
+        let grandTotalCost = 0;
+
+        Object.keys(analysis).forEach(key => {
+            const s = analysis[key];
+            grandTotalUnits += s.units;
+            grandTotalCost += s.cost;
+
+            tableBody.innerHTML += `
+                <tr class="hover:bg-white/5 transition-all">
+                    <td class="p-5 font-bold text-white uppercase tracking-tighter">Shift ${key}</td>
+                    <td class="p-5 text-center text-slate-500">${s.cfg.start}:00 - ${s.cfg.end}:00</td>
+                    <td class="p-5 text-center text-indigo-400 font-bold">${s.units.toFixed(2)} kWh</td>
+                    <td class="p-5 text-center text-slate-400">₹ ${parseFloat(s.cfg.rate).toFixed(2)}</td>
+                    <td class="p-5 text-right text-emerald-400 font-bold">₹ ${s.cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                </tr>`;
+        });
+
+        // 6. Update Summary Footer
+        document.getElementById('audit-total-units').innerText = `${grandTotalUnits.toFixed(2)} kWh`;
+        document.getElementById('audit-total-cost').innerText = `₹ ${grandTotalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        
+        resultsContainer.classList.remove('hidden');
+
+    } catch (err) {
+        console.error("Audit Engine Failure:", err);
+    }
+}
+/**
+ * Maps database values to the Dashboard Glass Cards
+ * @param {Object} data - The billing state object from /api/billing-state
+ */
+function updateDashboardUI(data) {
+    if (!data) return;
+
+    // 1. Update Accrued Bill (Emerald Card)
+    const costEl = document.getElementById('cost-energy');
+    if (costEl) {
+        costEl.innerText = `₹ ${Number(data.accrued_bill).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+
+    // 2. Update Efficiency Penalties (Red Card)
+    const penaltyEl = document.getElementById('cost-penalty');
+    if (penaltyEl) {
+        penaltyEl.innerText = `₹ ${Number(data.accrued_penalty).toFixed(2)}`;
+    }
+
+    // 3. Update Fixed Demand Cost (Blue Card)
+    const fixedEl = document.getElementById('cost-md');
+    const peakTextEl = document.getElementById('md-peak-text'); // The subtext element
+    if (fixedEl) {
+        // Calculation: Peak * Rate (280) * Tax (1.18)
+        const peakKva = parseFloat(data.peak_demand_kva || 0);
+        const demandCost = (peakKva * 280) * 1.18; 
+        fixedEl.innerText = `₹ ${demandCost.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        
+        if (peakTextEl) {
+            peakTextEl.innerText = `MD Peak: ${peakKva.toFixed(2)} kVA`;
+        }
+    }
+
+    // 4. Update Blended Unit Rate (Purple Card)
+    const rateEl = document.getElementById('avg-unit-rate');
+    if (rateEl) {
+        const totalUnits = parseFloat(data.units_a || 0) + 
+                           parseFloat(data.units_b || 0) + 
+                           parseFloat(data.units_c || 0);
+        
+        if (totalUnits > 0) {
+            const totalLiability = parseFloat(data.accrued_bill) + parseFloat(data.accrued_penalty);
+            const blended = totalLiability / totalUnits;
+            rateEl.innerText = `₹ ${blended.toFixed(2)}`;
+        } else {
+            rateEl.innerText = "₹ --";
+        }
+    }
+}
+// Run this function when the page loads
+async function syncFinancialCards() {
+    const token = localStorage.getItem('authToken');
+    
+    try {
+        const res = await fetch('/api/billing-state', {
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`, // Pass the secret key
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (res.status === 401) {
+            console.error("Session expired. Logging out...");
+            localStorage.clear();
+            window.location.href = '/index.html';
+            return;
+        }
+
+        const data = await res.json();
+        
+        // Update your Emerald, Red, Blue, and Purple cards with 'data'
+        updateDashboardUI(data);
+
+    } catch (err) {
+        console.error("Initial Sync Failed:", err);
+    }
+}
+// Call it on startup
+window.onload = syncFinancialCards;
+</script>
+</body>
+</html>
