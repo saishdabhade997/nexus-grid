@@ -28,24 +28,28 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ========================================
 // DATABASE CONNECTION
 // ========================================
+// ========================================
+// DATABASE CONNECTION (Render Compatible)
+// ========================================
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Render provides a single 'DATABASE_URL' variable
+// For local testing, you can still use your old .env variables if you want, 
+// but this setup prioritizes the Cloud URL.
+const connectionString = process.env.DATABASE_URL || 
+    `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
+
 const pool = new Pool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionString: connectionString,
+    ssl: isProduction ? { rejectUnauthorized: false } : false // ⚠️ REQUIRED for Render
 });
 
 pool.connect()
-    .then(() => console.log(`✅ Connected to database: ${process.env.DB_NAME}`))
+    .then(() => console.log(`✅ Connected to Database (SSL: ${isProduction})`))
     .catch(err => {
         console.error('❌ Database Connection Error:', err.message);
-        process.exit(1);
+        // Do not exit process in cloud, just log the error so the server stays alive
     });
-
 // ========================================
 // SERVER & SOCKET SETUP
 // ========================================
