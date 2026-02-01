@@ -509,10 +509,9 @@ button:not(:disabled):active {
         <div class="flex items-center gap-2 bg-gray-800 border border-blue-500/30 rounded-lg px-3 py-1.5 hover:border-blue-500 transition-colors">
             <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             
-            <select id="global-meter-select" onchange="switchMeter(this.value)" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer min-w-[160px] appearance-none">
-                <option value="meter_01">Main Incomer</option>
-                <option value="meter_02">Compressor Station</option>
-            </select>
+           <select id="global-meter-select" onchange="switchMeter(this.value)" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer min-w-[160px] appearance-none">
+    <option disabled selected>Loading Meters...</option>
+</select>
             
             <span class="text-gray-500 text-[8px]">▼</span>
         </div>
