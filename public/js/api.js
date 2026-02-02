@@ -461,7 +461,7 @@ window.syncSafetyUI = async function() {
 window.loadReschedulerSettings = async function(type) {
     try {
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${window.API_URL || ''}/rescheduler?section=${type}`, {
+        const res = await fetch(`${root}/rescheduler?section=${type}', {
              headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -616,4 +616,5 @@ window.fetchAlarmsByDate = async function(page = 1) {
 };
 
 // Global Exports
+
 window.initMeterSelector = initMeterSelector;
