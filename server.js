@@ -1738,10 +1738,10 @@ app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, 
 // ========================================
 // START SERVER
 // ========================================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; 
 
-server.listen(PORT, () => {
-console.log(`🚀 NexusGrid Backend running on port ${PORT}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 NexusGrid Backend running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'production'}`);
     console.log(`🔒 Security: JWT authentication enabled`);
 });
