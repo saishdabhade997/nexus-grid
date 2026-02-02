@@ -54,14 +54,17 @@ pool.connect()
 // SERVER & SOCKET SETUP
 // ========================================
 const server = http.createServer(app);
-const io = new Server(server, {
+const io = require('socket.io')(server, {
     cors: {
-        origin: "*",  // Allow any origin (good for testing)
+        // Allow ANY origin to connect (Easiest fix for Render)
+        origin: "*", 
         methods: ["GET", "POST"],
-        allowedHeaders: ["content-type"],
+        allowedHeaders: ["Authorization"],
         credentials: true
     },
-    transports: ['polling', 'websocket'] // Force support for both methods
+    // Increase ping timeout to prevent "looping" disconnects on slow networks
+    pingTimeout: 60000, 
+    pingInterval: 25000
 });
 
 
