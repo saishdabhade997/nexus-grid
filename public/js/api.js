@@ -46,13 +46,16 @@ async function initMeterSelector() {
         const token = localStorage.getItem('authToken');
         console.log("🔄 Fetching assigned meters from database...");
 
-        // 2. Fetch the list of meters the database says this user owns
-        const res = await fetch(`${API_ROOT}/my-meters`, {
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    // Add this line at the start of the function
+const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
+
+// Use API_ROOT in your fetch
+const res = await fetch(`${API_ROOT}/my-meters`, {
+    headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
+});
 
         if (res.ok) {
             const meters = await res.json();
@@ -647,6 +650,7 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
 
 
