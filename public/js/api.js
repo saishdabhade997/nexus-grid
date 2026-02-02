@@ -29,70 +29,80 @@ function formatTime(input) {
 /* ============================================================
    SMART METER SELECTOR (With Manual Switch Logic)
    ============================================================ */
+/* ============================================================
+   SMART METER SELECTOR (Fully Dynamic & Corrected)
+   ============================================================ */
 async function initMeterSelector() {
     const select = document.getElementById('global-meter-select');
     if (!select) return;
 
+    // 1. SAFETY CHECK: Ensure the URL is valid to prevent "undefined/my-meters"
+    const API_ROOT = window.API_URL || window.API_BASE_URL || "https://nexusgrid-api.onrender.com/api";
+
     try {
         const token = localStorage.getItem('authToken');
-        
-              const res = await fetch(`${window.API_URL}/my-meters`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-});
+        console.log("🔄 Fetching assigned meters from database...");
+
+        // 2. Fetch the list of meters the database says this user owns
+        const res = await fetch(`${API_ROOT}/my-meters`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
         if (res.ok) {
             const meters = await res.json();
             
-            // Scenario A: User has NO meters (New account)
-            if (meters.length === 0) {
-                select.innerHTML = '<option disabled selected>No Devices Found</option>';
-                window.ACTIVE_METER_ID = null; // Ensure no ID is active
-                alert("Welcome! You don't have any devices yet. Please claim one.");
+            // Scenario A: User has NO meters in the database
+            if (!meters || meters.length === 0) {
+                select.innerHTML = '<option disabled selected>No Meters Assigned</option>';
+                window.ACTIVE_METER_ID = null;
+                console.warn("⚠️ Database returned 0 meters for this user.");
                 return;
             }
 
-            // Scenario B: User has meters. Render the dropdown.
+            // Scenario B: Render the dropdown dynamically (ONLY shows DB data)
+            // This replaces your "Loading..." or hardcoded options completely
             select.innerHTML = meters.map(m => 
                 `<option value="${m.device_id}" ${m.device_id === window.ACTIVE_METER_ID ? 'selected' : ''}>
                     ${m.device_name || m.device_id}
                 </option>`
             ).join('');
 
-            // Scenario C: Validation & Auto-Correction Logic
-            // Check if the currently saved ID (from localStorage/config) actually belongs to this user.
+            // Scenario C: Auto-Correction (If local memory has 'meter_02' but DB only has 'meter_01')
             const currentIdIsValid = meters.some(m => m.device_id === window.ACTIVE_METER_ID);
 
-            // If ID is null (first login) OR invalid (hardcoded 'meter_01' not in their list)
-            // FORCE switch to their first valid meter.
             if (!window.ACTIVE_METER_ID || !currentIdIsValid) {
-                console.log(`⚠️ Invalid or missing ID. Auto-switching to: ${meters[0].device_id}`);
+                const defaultMeter = meters[0].device_id;
+                console.log(`📡 Setting active meter to database default: ${defaultMeter}`);
                 
-                // Update dropdown visually
-                select.value = meters[0].device_id;
+                select.value = defaultMeter;
+                window.ACTIVE_METER_ID = defaultMeter;
+                localStorage.setItem('lastMeterId', defaultMeter);
                 
-                // Trigger the system switch
                 if (typeof window.switchMeter === 'function') {
-                    window.switchMeter(meters[0].device_id);
+                    window.switchMeter(defaultMeter);
                 }
             }
-        } 
+        } else {
+            throw new Error(`Server responded with ${res.status}`);
+        }
     } catch (e) {
-        console.error("Failed to load meters:", e);
-        // Fallback for offline/error state
+        console.error("❌ Failed to load meters:", e);
         select.innerHTML = `<option selected disabled>Connection Failed</option>`;
     }
 
-    // --- 🚨 THE CRITICAL ADDITION: MANUAL SELECTION HANDLER ---
-    // This makes the dropdown actually DO something when you change it.
-    
-    // 1. Remove any existing listeners (prevents double-firing)
+    // --- MANUAL SELECTION HANDLER ---
+    // Re-bind the listener to the freshly rendered dropdown
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     
-    // 2. Add the Change Listener
     newSelect.addEventListener('change', (e) => {
         const newId = e.target.value;
         console.log(`🔄 User manually switched to: ${newId}`);
+        localStorage.setItem('lastMeterId', newId);
+        window.ACTIVE_METER_ID = newId;
         
         if (typeof window.switchMeter === 'function') {
             window.switchMeter(newId);
@@ -617,4 +627,5 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
