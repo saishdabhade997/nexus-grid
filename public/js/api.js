@@ -36,10 +36,9 @@ async function initMeterSelector() {
     try {
         const token = localStorage.getItem('authToken');
         
-        // 1. Fetch the list of meters THIS user actually owns
-        const res = await fetch(`${window.API_URL}/my-meters`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+              const res = await fetch(`${window.API_URL}/my-meters`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
 
         if (res.ok) {
             const meters = await res.json();
@@ -618,3 +617,4 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
