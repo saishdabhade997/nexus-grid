@@ -487,9 +487,10 @@ window.syncSafetyUI = async function() {
 
 // Rescheduler Functions
 window.loadReschedulerSettings = async function(type) {
-    try {
+  try {
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${root}/rescheduler?section=${type}', {
+        const root = window.API_URL || "https://nexusgrid-api.onrender.com/api";
+        const res = await fetch(`${root}/rescheduler?section=${type}`, {
              headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -646,6 +647,7 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
 
 
