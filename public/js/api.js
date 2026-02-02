@@ -195,11 +195,16 @@ window.saveSystemSettings = async function() {
     }
 };
 // Claim New Device
+/* ============================================================
+   DEVICE MANAGEMENT (With Safety URLs)
+   ============================================================ */
+
+// Claim New Device
 window.claimNewMeter = async function() {
     const btn = document.getElementById('btn-claim');
     const statusEl = document.getElementById('claim-status');
-    const idVal = document.getElementById('claim-device-id').value;
-    const nameVal = document.getElementById('claim-device-name').value;
+    const idVal = document.getElementById('claim-device-id')?.value;
+    const nameVal = document.getElementById('claim-device-name')?.value;
 
     if (!idVal || !nameVal) return alert("Please enter both Device ID and a Name.");
 
@@ -208,9 +213,14 @@ window.claimNewMeter = async function() {
 
     try {
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${window.API_URL}/devices/claim`, {
+        const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
+        
+        const res = await fetch(`${API_ROOT}/devices/claim`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ deviceId: idVal, friendlyName: nameVal })
         });
 
@@ -240,9 +250,14 @@ window.deleteActiveMeter = async function() {
 
     try {
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${window.API_URL}/devices/${window.ACTIVE_METER_ID}`, {
+        const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
+        
+        const res = await fetch(`${API_ROOT}/devices/${window.ACTIVE_METER_ID}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            headers: { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+            }
         });
 
         if (res.ok) {
@@ -256,7 +271,6 @@ window.deleteActiveMeter = async function() {
         alert(`❌ Error: ${e.message}`);
     }
 };
-
 
 
 /* ------------------------------------------------------------
@@ -632,6 +646,7 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
 
 
