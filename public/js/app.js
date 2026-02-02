@@ -405,24 +405,24 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 NexusGrid Enterprise: Online');
 
     // 1. Initialize Visuals & Modules
-    initAdvancedCharts();
-    initAnalyticsCharts();
-    generateHeatmap();
-    toggleAlarmView('dashboard');
+    // (Check if functions exist before calling to prevent crashes)
+    if (typeof initAdvancedCharts === 'function') initAdvancedCharts();
+    if (typeof initAnalyticsCharts === 'function') initAnalyticsCharts();
+    if (typeof generateHeatmap === 'function') generateHeatmap();
+    if (typeof toggleAlarmView === 'function') toggleAlarmView('dashboard');
     
     // 2. Initialize UI Helpers
     if (typeof renderColumnSelector === 'function') renderColumnSelector();
 
-    // 3. Start Smart Meter Selector 
-    // (This handles the NULL -> meter_01 switch asynchronously)
-    initMeterSelector(); 
+    // 3. Start Smart Meter Selector (SAFE CALL)
+    // We check if the function exists in the global window object first
+    if (typeof window.initMeterSelector === 'function') {
+        window.initMeterSelector(); 
+    } else {
+        console.error("❌ initMeterSelector not found. Make sure api.js is loaded BEFORE app.js in your HTML.");
+    }
 
-    // 4. Start Live Socket Stream
     startLiveStream();
-
-    // 5. Initial Data Sync (Conditional Safety Guard)
-    // We ONLY run these immediately if we already have a valid ID.
-    // If ID is null, we wait for 'initMeterSelector' -> 'switchMeter' to trigger them.
     if (window.ACTIVE_METER_ID) {
         if (typeof syncSafetyUI === 'function') syncSafetyUI();
       
@@ -931,4 +931,5 @@ window.switchMeter = function(newId) {
 
     console.log(`✅ Switched to ${newId}. Waiting for live stream...`);
     console.groupEnd();
+
 };
