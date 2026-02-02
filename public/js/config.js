@@ -2,8 +2,8 @@
    GLOBAL CONFIGURATION & STATE
    ============================================================ */
 console.log("⚙️ Loading Configuration...");
-
-window.API_BASE_URL = "https://nexusgrid-api.onrender.com";
+window.API_URL = "https://nexusgrid-api.onrender.com/api";
+window.API_BASE_URL = "https://nexusgrid-api.onrender.com/api";
 
 // Socket.io connection (Attached to window for global access)
 // ⚠️ CHANGE THIS URL to your Render Link
@@ -85,3 +85,4 @@ window.ALL_COLUMNS = [
     // 6. Device Health
     { id: 'meter_temperature', label: 'Meter Temp (°C)', selected: false }
 ];
+
