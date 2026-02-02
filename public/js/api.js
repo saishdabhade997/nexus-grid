@@ -32,6 +32,9 @@ function formatTime(input) {
 /* ============================================================
    SMART METER SELECTOR (Fully Dynamic & Corrected)
    ============================================================ */
+/* ============================================================
+   SMART METER SELECTOR (Complete & Syntax-Safe)
+   ============================================================ */
 async function initMeterSelector() {
     const select = document.getElementById('global-meter-select');
     if (!select) return;
@@ -63,14 +66,13 @@ async function initMeterSelector() {
             }
 
             // Scenario B: Render the dropdown dynamically (ONLY shows DB data)
-            // This replaces your "Loading..." or hardcoded options completely
             select.innerHTML = meters.map(m => 
                 `<option value="${m.device_id}" ${m.device_id === window.ACTIVE_METER_ID ? 'selected' : ''}>
                     ${m.device_name || m.device_id}
                 </option>`
             ).join('');
 
-            // Scenario C: Auto-Correction (If local memory has 'meter_02' but DB only has 'meter_01')
+            // Scenario C: Auto-Correction (Force valid ID)
             const currentIdIsValid = meters.some(m => m.device_id === window.ACTIVE_METER_ID);
 
             if (!window.ACTIVE_METER_ID || !currentIdIsValid) {
@@ -94,7 +96,7 @@ async function initMeterSelector() {
     }
 
     // --- MANUAL SELECTION HANDLER ---
-    // Re-bind the listener to the freshly rendered dropdown
+    // We clone the node to clear any old event listeners
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     
@@ -109,6 +111,9 @@ async function initMeterSelector() {
         }
     });
 }
+
+// Attach to window so app.js can see it
+window.initMeterSelector = initMeterSelector;
 /* ============================================================
    SYSTEM SETTINGS (User Preferences)
    ============================================================ */
@@ -627,5 +632,6 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
 
