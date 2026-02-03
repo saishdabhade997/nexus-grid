@@ -599,51 +599,68 @@ app.put('/api/admin/users/:id/password', authenticateToken, requireAdmin, async 
     }
 });
 // PUBLIC REGISTRATION ROUTE
-app.post('/api/register', async (req, res) => {
-    const { email, password, plan } = req.body;
+/* ============================================================
+   ✅ AUTH ROUTE: REGISTER (Updated for Premium Page)
+   ============================================================ */
+app.post('/api/auth/register', async (req, res) => {
+    const { name, email, password, plan } = req.body;
 
+    // 1. Basic Validation
     if (!email || !password) {
-        return res.status(400).json({ error: "Email and Password required" });
+        return res.status(400).json({ error: "Email and Password are required" });
     }
 
     try {
-        // 1. Check if user exists
+        // 2. Check if user exists
         const check = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
         if (check.rows.length > 0) {
-            return res.status(400).json({ error: "User already exists. Please login." });
+            return res.status(400).json({ error: "User already exists. Please log in." });
         }
 
-        // 2. Hash Password
+        // 3. Hash Password
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(password, salt);
 
-        // 3. Insert User (Default role = user)
+        // 4. Insert User
+        // Note: If you haven't run the SQL command yet, remove 'full_name' from this query
         const newUser = await pool.query(
-            `INSERT INTO users (email, password_hash, role, plan, created_at) 
-             VALUES ($1, $2, 'user', $3, NOW()) 
-             RETURNING id, email, role`,
-            [email, hash, plan || 'essential']
+            `INSERT INTO users (full_name, email, password_hash, role, plan, created_at) 
+             VALUES ($1, $2, $3, 'user', $4, NOW()) 
+             RETURNING id, email, role, full_name`,
+            [name || 'Anonymous', email, hash, plan || 'essential']
         );
 
         const user = newUser.rows[0];
 
-        // 4. (Optional) Auto-assign a Demo Meter so they have something to look at
+        // 5. Auto-assign a Safe Demo Meter
+        // We include default safety thresholds so the dashboard works instantly without setup
         await pool.query(
-            `INSERT INTO devices (device_id, device_name, user_id) VALUES ($1, $2, $3)`,
-            [`demo_${user.id}`, 'My First Meter', user.id]
+            `INSERT INTO devices (
+                device_id, device_name, user_id, 
+                v_ov, v_uv, i_oc, tariff_config
+            ) VALUES ($1, $2, $3, 456, 373, 110, '{}')`,
+            [`meter_${user.id}_01`, 'Main Incomer', user.id]
         );
 
-        // 5. Generate Token
+        // 6. Generate Token
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'your-secret-key-change-this',
             { expiresIn: '24h' }
         );
 
+        console.log(`🚀 New User Registered: ${email}`);
         res.json({ token, user });
 
     } catch (err) {
         console.error("Signup Error:", err.message);
+        
+        // Handle missing column error specifically to help you debug
+        if (err.message.includes("column \"full_name\" does not exist")) {
+            console.error("⚠️ TIP: Run 'ALTER TABLE users ADD COLUMN full_name VARCHAR(100);' in your DB.");
+            return res.status(500).json({ error: "Database needs update (Missing Name Column)" });
+        }
+
         res.status(500).json({ error: "Registration failed" });
     }
 });
