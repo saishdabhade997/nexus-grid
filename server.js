@@ -213,8 +213,8 @@ function validateTelemetry(req, res, next) {
 // ROUTES
 // ========================================
 
-app.post('/api/signup', async (req, res) => {
-    // 1. Destructure all fields (including name & plan for Premium features)
+app.post('/api/auth/register', async (req, res) => {
+    // 1. Capture ALL fields sent from frontend
     const { name, email, password, plan } = req.body;
 
     // 2. Validation
@@ -223,30 +223,43 @@ app.post('/api/signup', async (req, res) => {
     }
 
     try {
-        // 3. Check if user already exists
+        // 3. Check if user exists
         const check = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
         if (check.rows.length > 0) {
             return res.status(409).json({ error: "User already exists. Please log in." });
         }
 
-        // 4. Hash the Password
+        // 4. Hash Password
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(password, salt);
 
-        // 5. Insert User into Database
-        // We set the role to 'user' by default
-        // We use COALESCE/OR logic for name incase your DB doesn't have the column yet
-        const newUser = await pool.query(
-            `INSERT INTO users (email, password_hash, role, plan, created_at) 
-             VALUES ($1, $2, 'user', $3, NOW()) 
-             RETURNING id, email, role`,
-            [email, hash, plan || 'essential']
-        );
+        // 5. Define Role (Fixes the "role is not defined" error)
+        const role = 'user'; 
+
+        // 6. Insert User (Updated to save Name and Plan)
+        // We use COALESCE to handle cases where 'full_name' column might be missing in older DBs
+        let newUser;
+        try {
+            newUser = await pool.query(
+                `INSERT INTO users (full_name, email, password_hash, role, plan, created_at) 
+                 VALUES ($1, $2, $3, $4, $5, NOW()) 
+                 RETURNING id, email, role, plan`,
+                [name || 'User', email, hash, role, plan || 'essential']
+            );
+        } catch (dbErr) {
+            // Fallback if 'full_name' column doesn't exist yet
+            newUser = await pool.query(
+                `INSERT INTO users (email, password_hash, role, plan, created_at) 
+                 VALUES ($1, $2, $3, $4, NOW()) 
+                 RETURNING id, email, role, plan`,
+                [email, hash, role, plan || 'essential']
+            );
+        }
 
         const user = newUser.rows[0];
 
-        // 6. 🎁 Auto-Provision a Demo Device
-        // This ensures the dashboard is not empty when they first log in
+        // 7. Auto-Provision Device (Fixes the syntax in Image 3)
+        // We insert default values for safety thresholds (456, 373, 110)
         await pool.query(
             `INSERT INTO devices (
                 device_id, device_name, user_id, 
@@ -255,25 +268,18 @@ app.post('/api/signup', async (req, res) => {
             [meter_${user.id}_01, 'Main Incomer', user.id]
         );
 
-        // 7. Generate JWT Token (For Auto-Login)
+        // 8. Generate Token
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'secret',
             { expiresIn: '24h' }
         );
 
-        console.log(🚀 New User Signed Up: ${email});
-
-        // 8. Send Success Response
-        res.json({ 
-            success: true,
-            token, 
-            user: { id: user.id, email: user.email, role: user.role } 
-        });
+        res.json({ token, user });
 
     } catch (err) {
         console.error("Signup Error:", err.message);
-        res.status(500).json({ error: "Server error during signup" });
+        res.status(500).json({ error: "Server error during registration" });
     }
 });
 app.delete('/api/alarms/archive', authenticateToken, async (req, res) => {
