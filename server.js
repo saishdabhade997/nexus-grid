@@ -265,7 +265,7 @@ app.post('/api/auth/register', async (req, res) => {
                 device_id, device_name, user_id, 
                 v_ov, v_uv, i_oc, tariff_config
             ) VALUES ($1, $2, $3, 456, 373, 110, '{}')`,
-            [meter_${user.id}_01, 'Main Incomer', user.id]
+            [`meter_${user.id}_01`, 'Main Incomer', user.id]
         );
 
         // 8. Generate Token
