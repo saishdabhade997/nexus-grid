@@ -15,9 +15,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get('/signup.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'signup.html'));
-});
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle favicon requests to prevent 404 errors
 app.get('/favicon.ico', (req, res) => {
