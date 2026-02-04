@@ -213,9 +213,69 @@ function validateTelemetry(req, res, next) {
 // ROUTES
 // ========================================
 
-/* =========================================
-   CLEAR ALARM ARCHIVE (Destructive Action)
-   ========================================= */
+app.post('/api/signup', async (req, res) => {
+    // 1. Destructure all fields (including name & plan for Premium features)
+    const { name, email, password, plan } = req.body;
+
+    // 2. Validation
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and Password are required" });
+    }
+
+    try {
+        // 3. Check if user already exists
+        const check = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (check.rows.length > 0) {
+            return res.status(409).json({ error: "User already exists. Please log in." });
+        }
+
+        // 4. Hash the Password
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+
+        // 5. Insert User into Database
+        // We set the role to 'user' by default
+        // We use COALESCE/OR logic for name incase your DB doesn't have the column yet
+        const newUser = await pool.query(
+            `INSERT INTO users (email, password_hash, role, plan, created_at) 
+             VALUES ($1, $2, 'user', $3, NOW()) 
+             RETURNING id, email, role`,
+            [email, hash, plan || 'essential']
+        );
+
+        const user = newUser.rows[0];
+
+        // 6. 🎁 Auto-Provision a Demo Device
+        // This ensures the dashboard is not empty when they first log in
+        await pool.query(
+            `INSERT INTO devices (
+                device_id, device_name, user_id, 
+                v_ov, v_uv, i_oc, tariff_config
+            ) VALUES ($1, $2, $3, 456, 373, 110, '{}')`,
+            [meter_${user.id}_01, 'Main Incomer', user.id]
+        );
+
+        // 7. Generate JWT Token (For Auto-Login)
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '24h' }
+        );
+
+        console.log(🚀 New User Signed Up: ${email});
+
+        // 8. Send Success Response
+        res.json({ 
+            success: true,
+            token, 
+            user: { id: user.id, email: user.email, role: user.role } 
+        });
+
+    } catch (err) {
+        console.error("Signup Error:", err.message);
+        res.status(500).json({ error: "Server error during signup" });
+    }
+});
 app.delete('/api/alarms/archive', authenticateToken, async (req, res) => {
     try {
         // Execute deletion
