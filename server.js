@@ -213,7 +213,7 @@ function validateTelemetry(req, res, next) {
 // ROUTES
 // ========================================
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/signup', async (req, res) => {
     // 1. Capture ALL fields sent from frontend
     const { name, email, password, plan } = req.body;
 
