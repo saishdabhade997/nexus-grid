@@ -667,7 +667,7 @@ app.put('/api/admin/users/:id/password', authenticateToken, requireAdmin, async 
 /* ============================================================
    ✅ AUTH ROUTE: REGISTER (Updated for Premium Page)
    ============================================================ */
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/signup', async (req, res) => {
     const { name, email, password, plan } = req.body;
 
     // 1. Basic Validation
