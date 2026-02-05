@@ -5,16 +5,17 @@ console.log("⚙️ Loading Configuration...");
 window.API_URL = "https://nexusgrid-api.onrender.com/api";
 window.API_BASE_URL = "https://nexusgrid-api.onrender.com/api";
 
-// Socket.io connection (Attached to window for global access)
-// ⚠️ CHANGE THIS URL to your Render Link
-window.socket = io('https://nexusgrid-api.onrender.com', {
-    transports: ['websocket', 'polling'], // 'websocket' first is faster
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionAttempts: 10,
-    secure: true, // Important for HTTPS
-});
-
+if (typeof io !== 'undefined') {
+    window.socket = io('https://nexusgrid-api.onrender.com', {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 10,
+        secure: true,
+    });
+} else {
+    console.log("ℹ️ Socket.io not loaded. Skipping real-time connection (Normal for Signup/Login).");
+}
 // 2. Visual Configs
 window.CONFIG = {
     bgGrid: '#334155',
@@ -85,4 +86,5 @@ window.ALL_COLUMNS = [
     // 6. Device Health
     { id: 'meter_temperature', label: 'Meter Temp (°C)', selected: false }
 ];
+
 
