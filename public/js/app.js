@@ -11,52 +11,87 @@ function getUnit(key) {
   if (k.includes('temp')) return ' °C';
   return '';
 }
-// Function to Save System Settings
+// UPDATED: SEND REQUEST INSTEAD OF SAVE
+// ==========================================
 async function saveSystemSettings() {
     const btn = document.getElementById('save-sys-btn');
-    const originalText = btn.innerText;
-    
-    // 1. Capture Values
-    const settings = {
-        alertsEnabled: document.getElementById('enable-alerts').checked,
-        alertEmail: document.getElementById('alert-email').value,
-        dataPersistence: document.getElementById('persist-data').checked, // NEW FIELD
-        retentionDays: document.getElementById('retention-days').value
-    };
+    const originalText = btn ? btn.innerText : 'Save Config';
 
-    // UI Feedback (Loading)
-    btn.innerText = "SAVING...";
-    btn.disabled = true;
+    // 1. UI Feedback
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-paper-plane fa-pulse mr-2"></i> SENDING REQ...';
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
 
     try {
-        const token = localStorage.getItem('token');
-        
-        // 2. Send to Backend
-        const res = await fetch('/api/admin/settings', {
+        const token = localStorage.getItem('authToken');
+
+        // 2. Gather Data
+        const settingsPayload = {
+            alertsEnabled: document.getElementById('enable-alerts').checked,
+            alertEmail: document.getElementById('alert-email').value,
+            dataPersistence: document.getElementById('persist-data').checked,
+            retentionDays: document.getElementById('retention-days').value
+        };
+
+        // 3. Validation
+        if (settingsPayload.alertsEnabled && !settingsPayload.alertEmail) {
+            throw new Error("Please enter an email address to enable alerts.");
+        }
+
+        // 4. SEND TO REQUEST API (This triggers the Admin Table)
+        const res = await fetch('/api/user/request-change', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(settings)
+            body: JSON.stringify({
+                type: 'SYSTEM_SETTINGS_UPDATE', // Tells Admin what this is
+                payload: settingsPayload
+            })
         });
 
+        // 5. Handle Response
         if (res.ok) {
-            alert("✅ System Kernel Updated Successfully");
+            // Visual Success - Amber color for "Pending"
+            if (btn) {
+                btn.innerHTML = '✅ REQUEST SENT';
+                btn.classList.remove('bg-purple-600/20', 'text-purple-400');
+                btn.classList.add('bg-amber-600', 'text-white'); 
+            }
+            
+            alert("✅ Request Sent! An Admin must approve these changes.");
+
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                if (btn) {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('bg-amber-600', 'text-white', 'opacity-50', 'cursor-not-allowed');
+                    btn.classList.add('bg-purple-600/20', 'text-purple-400');
+                }
+            }, 3000);
         } else {
             const err = await res.json();
-            throw new Error(err.error || "Failed to save settings");
+            throw new Error(err.error || "Server rejected request");
         }
+
     } catch (err) {
         console.error(err);
         alert("❌ Error: " + err.message);
-    } finally {
-        // UI Feedback (Reset)
-        btn.innerText = originalText;
-        btn.disabled = false;
+        // Reset button immediately on error
+        if (btn) {
+            btn.innerText = "ERROR";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 2000);
+        }
     }
 }
-
 function updateManual(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -978,4 +1013,5 @@ window.switchMeter = function(newId) {
     console.groupEnd();
 
 };
+
 
