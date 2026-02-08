@@ -365,14 +365,17 @@
             renderUsers(filtered);
         }
 
-        function updateStats(users) {
-            document.getElementById('stat-users').innerText = users.length;
+       function updateStats(users) {
+            // 1. Total Clients
+            const userEl = document.getElementById('stat-users');
+            if (userEl) userEl.innerText = users.length;
+
+            // 2. Total Energy
             const totalEnergy = users.reduce((sum, u) => sum + parseFloat(u.total_units), 0);
-            document.getElementById('stat-energy').innerText = (totalEnergy / 1000).toFixed(1) + ' MWh';
-            const totalDebt = users.reduce((sum, u) => sum + parseFloat(u.bill_due), 0);
-            const debtEl = document.getElementById('stat-debt');
-            debtEl.innerText = '₹' + totalDebt.toLocaleString();
-            if(totalDebt > 0) debtEl.classList.add('text-red-400');
+            const energyEl = document.getElementById('stat-energy');
+            if (energyEl) energyEl.innerText = (totalEnergy / 1000).toFixed(1) + ' MWh';
+
+            // REMOVED: Debt calculation (stat-debt) because that card was replaced by "Pending Approvals"
         }
 
         function renderUsers(users) {
@@ -565,3 +568,4 @@
     </script>
 </body> 
 </html>
+
