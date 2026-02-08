@@ -11,6 +11,51 @@ function getUnit(key) {
   if (k.includes('temp')) return ' °C';
   return '';
 }
+// Function to Save System Settings
+async function saveSystemSettings() {
+    const btn = document.getElementById('save-sys-btn');
+    const originalText = btn.innerText;
+    
+    // 1. Capture Values
+    const settings = {
+        alertsEnabled: document.getElementById('enable-alerts').checked,
+        alertEmail: document.getElementById('alert-email').value,
+        dataPersistence: document.getElementById('persist-data').checked, // NEW FIELD
+        retentionDays: document.getElementById('retention-days').value
+    };
+
+    // UI Feedback (Loading)
+    btn.innerText = "SAVING...";
+    btn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('token');
+        
+        // 2. Send to Backend
+        const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(settings)
+        });
+
+        if (res.ok) {
+            alert("✅ System Kernel Updated Successfully");
+        } else {
+            const err = await res.json();
+            throw new Error(err.error || "Failed to save settings");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("❌ Error: " + err.message);
+    } finally {
+        // UI Feedback (Reset)
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
 
 function updateManual(id, value) {
   const el = document.getElementById(id);
@@ -933,3 +978,4 @@ window.switchMeter = function(newId) {
     console.groupEnd();
 
 };
+
