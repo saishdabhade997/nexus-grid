@@ -295,6 +295,78 @@ app.delete('/api/alarms/archive', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Database failed to clear logs' });
     }
 });
+// --- APPROVAL SYSTEM ROUTES ---
+
+// 1. User: Submit a Request (Instead of saving directly)
+app.post('/api/user/request-change', authenticateToken, async (req, res) => {
+    const { type, payload } = req.body; // e.g. type="DATA_PERSISTENCE"
+    
+    try {
+        await pool.query(
+            `INSERT INTO pending_requests (user_id, request_type, payload) VALUES ($1, $2, $3)`,
+            [req.user.id, type, JSON.stringify(payload)]
+        );
+        res.json({ message: "Request queued for Admin approval." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to submit request" });
+    }
+});
+
+// 2. Admin: View All Pending Requests
+app.get('/api/admin/requests', authenticateToken, async (req, res) => {
+    // Security Check: Only Admins
+    if (req.user.role !== 'admin') return res.sendStatus(403);
+    
+    try {
+        const result = await pool.query(`
+            SELECT r.id, r.request_type as type, r.payload, r.created_at, u.email as user_email 
+            FROM pending_requests r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.status = 'PENDING'
+            ORDER BY r.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching requests" });
+    }
+});
+
+// 3. Admin: Approve or Reject a Request
+app.post('/api/admin/requests/:id/:action', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.sendStatus(403);
+    const { id, action } = req.params; // action will be 'approve' or 'reject'
+    
+    try {
+        if (action === 'reject') {
+            await pool.query("UPDATE pending_requests SET status = 'REJECTED' WHERE id = $1", [id]);
+            return res.json({ message: "Request Rejected" });
+        }
+
+        if (action === 'approve') {
+            // A. Get the request details
+            const reqData = await pool.query("SELECT * FROM pending_requests WHERE id = $1", [id]);
+            if (reqData.rows.length === 0) return res.status(404).json({error: "Request not found"});
+            
+            const request = reqData.rows[0];
+
+            // B. APPLY THE CHANGE (Logic depends on request type)
+            if (request.request_type === 'DATA_PERSISTENCE') {
+                const setting = request.payload.dataPersistence; // true/false
+                // Update the User's specific setting in the users table
+                // (Note: Ensure your users table has a 'data_persistence' column, or create it)
+                await pool.query("UPDATE users SET data_persistence = $1 WHERE id = $2", [setting, request.user_id]);
+            }
+
+            // C. Mark as Approved
+            await pool.query("UPDATE pending_requests SET status = 'APPROVED' WHERE id = $1", [id]);
+            return res.json({ message: "Request Approved & Applied" });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Action failed" });
+    }
+});
 
 /**
  * LOGIN ROUTE - Generate JWT token
