@@ -343,26 +343,34 @@ app.post('/api/admin/requests/:id/:action', authenticateToken, async (req, res) 
             return res.json({ message: "Request Rejected" });
         }
 
-        if (action === 'approve') {
+     if (action === 'approve') {
             // A. Get the request details
             const reqData = await pool.query("SELECT * FROM pending_requests WHERE id = $1", [id]);
             if (reqData.rows.length === 0) return res.status(404).json({error: "Request not found"});
             
             const request = reqData.rows[0];
 
-            // B. APPLY THE CHANGE (Logic depends on request type)
-            if (request.request_type === 'DATA_PERSISTENCE') {
-                const setting = request.payload.dataPersistence; // true/false
-                // Update the User's specific setting in the users table
-                // (Note: Ensure your users table has a 'data_persistence' column, or create it)
-                await pool.query("UPDATE users SET data_persistence = $1 WHERE id = $2", [setting, request.user_id]);
+            // B. APPLY THE CHANGE
+            if (request.request_type === 'SYSTEM_SETTINGS_UPDATE') {
+                // Extract data from the JSON payload
+                const { data_persistence, retention_days, enable_alerts, alert_email } = request.payload;
+
+                // Update the User's settings in the users table
+                await pool.query(
+                    `UPDATE users SET 
+                        data_persistence = $1, 
+                        retention_days = $2, 
+                        enable_alerts = $3, 
+                        alert_email = $4 
+                     WHERE id = $5`, 
+                    [data_persistence, retention_days, enable_alerts, alert_email, request.user_id]
+                );
             }
 
             // C. Mark as Approved
             await pool.query("UPDATE pending_requests SET status = 'APPROVED' WHERE id = $1", [id]);
             return res.json({ message: "Request Approved & Applied" });
-        }
-    } catch (err) {
+        }    } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Action failed" });
     }
