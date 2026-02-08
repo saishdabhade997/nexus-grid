@@ -122,11 +122,11 @@ window.initMeterSelector = initMeterSelector;
    ============================================================ */
 window.saveSystemSettings = async function() {
     const btn = document.getElementById('save-sys-btn');
-    const originalText = btn ? btn.innerText : 'Save';
+    const originalText = btn ? btn.innerText : 'Save Config';
 
-    // 1. UI Feedback (Loading State)
+    // 1. UI Feedback (Sending Request State)
     if (btn) {
-        btn.innerText = "SAVING...";
+        btn.innerHTML = '<i class="fas fa-paper-plane fa-pulse mr-2"></i> SENDING REQ...';
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');
     }
@@ -136,55 +136,68 @@ window.saveSystemSettings = async function() {
         const alertEmailInput = document.getElementById('alert-email');
         const enableAlertsInput = document.getElementById('enable-alerts');
         const retentionInput = document.getElementById('retention-days');
+        const persistInput = document.getElementById('persist-data'); // Ensure this ID matches your toggle
 
-        const payload = {
+        // Construct the settings object we WANT to save
+        const requestedSettings = {
             alert_email: alertEmailInput ? alertEmailInput.value : "",
             enable_alerts: enableAlertsInput ? enableAlertsInput.checked : false,
-            retention_days: retentionInput ? parseInt(retentionInput.value) : 30
+            retention_days: retentionInput ? parseInt(retentionInput.value) : 30,
+            data_persistence: persistInput ? persistInput.checked : true
         };
 
         // 3. Validation
-        if (payload.enable_alerts && !payload.alert_email) {
+        if (requestedSettings.enable_alerts && !requestedSettings.alert_email) {
             throw new Error("Please enter an email address to enable alerts.");
         }
 
-        // 4. Send to Backend
+        // 4. Send to "Request Change" API (Not direct save)
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${window.API_URL}/settings/system`, {
+        
+        // We wrap the settings in a payload with a specific TYPE
+        const apiPayload = {
+            type: 'SYSTEM_SETTINGS_UPDATE', 
+            payload: requestedSettings
+        };
+
+        const res = await fetch(`${window.API_URL}/user/request-change`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(apiPayload)
         });
 
         // 5. Handle Response
         if (res.ok) {
-            // Success Animation
+            // Success Animation (Amber color to indicate "Pending Approval")
             if (btn) {
-                btn.innerText = "✅ SAVED";
+                btn.innerHTML = '<i class="fas fa-clock"></i> REQUEST SENT';
                 btn.classList.remove('bg-purple-600/20', 'text-purple-400');
-                btn.classList.add('bg-green-600', 'text-white');
+                btn.classList.add('bg-amber-600', 'text-white'); 
             }
             
-            // Revert Button after 2 seconds
+            // Inform the user clearly
+            alert("✅ Request Sent! An Admin must approve these changes before they apply.");
+
+            // Revert Button after 3 seconds
             setTimeout(() => {
                 if (btn) {
                     btn.innerText = originalText;
                     btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-green-600', 'text-white');
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-amber-600', 'text-white');
                     btn.classList.add('bg-purple-600/20', 'text-purple-400');
                 }
-            }, 2000);
+            }, 3000);
         } else {
             const errData = await res.json();
-            throw new Error(errData.error || "Server rejected settings.");
+            throw new Error(errData.error || "Server rejected request.");
         }
 
     } catch (e) {
-        console.error("Save Settings Error:", e);
-        alert(`❌ Save Failed: ${e.message}`);
+        console.error("Request Error:", e);
+        alert(`❌ Request Failed: ${e.message}`);
         
         // Reset Button on Error
         if (btn) {
@@ -196,8 +209,7 @@ window.saveSystemSettings = async function() {
             }, 2000);
         }
     }
-};
-// Claim New Device
+};// Claim New Device
 /* ============================================================
    DEVICE MANAGEMENT (With Safety URLs)
    ============================================================ */
@@ -650,6 +662,7 @@ window.fetchAlarmsByDate = async function(page = 1) {
 // Global Exports
 
 window.initMeterSelector = initMeterSelector;
+
 
 
 
