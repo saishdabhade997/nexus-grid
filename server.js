@@ -295,6 +295,7 @@ app.delete('/api/alarms/archive', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Database failed to clear logs' });
     }
 });
+
 /**
  * LOGIN ROUTE - Generate JWT token
  */
@@ -557,6 +558,29 @@ app.get('/api/devices/:id/safety', authenticateToken, async (req, res) => {
         res.json(result.rows[0]); 
     } catch (err) {
         console.error("GET Safety Error:", err.message);
+        res.status(500).json({ error: "Database error" });
+    }
+});
+// POST: Save Admin Settings
+app.post('/api/admin/settings', async (req, res) => {
+    const { dataPersistence, alertsEnabled, retentionDays } = req.body;
+    
+    try {
+        // Save to DB
+        await pool.query(
+            `INSERT INTO system_settings (key_name, value_json) 
+             VALUES ('kernel_config', $1) 
+             ON CONFLICT (key_name) 
+             DO UPDATE SET value_json = $1`,
+            [JSON.stringify(req.body)]
+        );
+
+        // Update global variable in memory (for speed)
+        global.SYSTEM_CONFIG = req.body; 
+
+        res.json({ message: "Settings saved" });
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ error: "Database error" });
     }
 });
