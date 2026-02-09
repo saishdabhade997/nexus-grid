@@ -1020,13 +1020,15 @@ async function checkRealTimeSafetyAlerts(data) {
             const lastEmail = alertCooldowns.get(cooldownKey) || 0;
 
             if (now - lastEmail > ALERT_COOLDOWN_MS) {
-                // ... (Email sending logic remains the same) ...
-                // Just ensuring the email code block is here or reused from previous step
-                
                 const transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-                });
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, 
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // This MUST be a 16-char App Password
+  },
+});
 
                 await transporter.sendMail({
                     from: `"NexusGrid Safety" <${process.env.EMAIL_USER}>`,
