@@ -115,11 +115,13 @@ function sanitizeTelemetryForBroadcast(rawData) {
     };
 }
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // MUST be false for port 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 let lastEmailSentTime = 0;
