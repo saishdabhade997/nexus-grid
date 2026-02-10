@@ -1458,13 +1458,50 @@ app.post('/api/settings/system', authenticateToken, async (req, res) => {
 });
 
 // AUTO-CLEANUP (Runs every midnight)
+// AUTO-CLEANUP (Runs every midnight at 00:00)
 cron.schedule('0 0 * * *', async () => {
     try {
-        const res = await pool.query('SELECT data_retention_days FROM system_settings WHERE id = 1');
-        const days = res.rows[0]?.data_retention_days || 30;
-        await pool.query(`DELETE FROM telemetry WHERE created_at < NOW() - INTERVAL '${days} days'`);
-        console.log(`🧹 Auto-Cleanup executed.`);
-    } catch (err) { console.error("Cleanup Error:", err.message); }
+        console.log('🧹 Starting Daily Data Cleanup...');
+
+        // 1. CLEANUP FREE USERS (Keep only 24 hours)
+        // Deletes telemetry for devices owned by users on 'free' or 'essential' plans
+        const freeResult = await pool.query(`
+            DELETE FROM telemetry t
+            USING devices d, users u
+            WHERE t.device_id = d.device_id
+            AND d.user_id = u.id
+            AND (u.plan = 'free' OR u.plan = 'essential')
+            AND t.created_at < NOW() - INTERVAL '1 day'
+        `);
+        console.log(`   - Free Tier: Deleted ${freeResult.rowCount} old rows.`);
+
+        // 2. CLEANUP PROFESSIONAL USERS (Keep 30 days)
+        const proResult = await pool.query(`
+            DELETE FROM telemetry t
+            USING devices d, users u
+            WHERE t.device_id = d.device_id
+            AND d.user_id = u.id
+            AND u.plan = 'professional'
+            AND t.created_at < NOW() - INTERVAL '30 days'
+        `);
+        console.log(`   - Pro Tier: Deleted ${proResult.rowCount} old rows.`);
+
+        // 3. CLEANUP ENTERPRISE USERS (Keep 90 days)
+        const entResult = await pool.query(`
+            DELETE FROM telemetry t
+            USING devices d, users u
+            WHERE t.device_id = d.device_id
+            AND d.user_id = u.id
+            AND u.plan = 'enterprise'
+            AND t.created_at < NOW() - INTERVAL '90 days'
+        `);
+        console.log(`   - Enterprise: Deleted ${entResult.rowCount} old rows.`);
+
+        console.log('✅ Data Cleanup Complete.');
+
+    } catch (err) {
+        console.error("❌ Cleanup Error:", err.message);
+    }
 });
 
 cron.schedule('* * * * *', async () => {
