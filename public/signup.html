@@ -119,27 +119,26 @@
                     </div>
                     <p class="text-[10px] text-slate-500 mt-1 ml-1">Must be at least 6 characters.</p>
                 </div>
-                
-                <div class="pt-6 border-t border-slate-700/50">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Select Payment Method</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="relative">
-                            <input type="radio" name="payment" id="pay-card" class="peer hidden" checked>
-                            <label for="pay-card" class="block cursor-pointer bg-slate-900/50 border border-slate-600 p-4 rounded-lg text-center hover:bg-slate-800 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400">
-                                <i class="fas fa-credit-card mb-2 text-lg"></i>
-                                <div class="text-xs font-bold">Credit Card</div>
-                            </label>
-                            <div class="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full hidden peer-checked:block shadow-[0_0_10px_#3b82f6]"></div>
-                        </div>
-                        <div class="relative opacity-60">
-                            <input type="radio" name="payment" id="pay-upi" class="peer hidden" disabled>
-                            <label for="pay-upi" class="block cursor-not-allowed bg-slate-900/30 border border-slate-700 p-4 rounded-lg text-center text-slate-500">
-                                <i class="fas fa-qrcode mb-2 text-lg"></i>
-                                <div class="text-xs font-bold">UPI / NetBanking</div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+                <div id="payment-section" class="pt-6 border-t border-slate-700/50">
+    <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Select Payment Method</label>
+    <div class="grid grid-cols-2 gap-3">
+        <div class="relative">
+            <input type="radio" name="payment" id="pay-card" class="peer hidden" checked>
+            <label for="pay-card" class="block cursor-pointer bg-slate-900/50 border border-slate-600 p-4 rounded-lg text-center hover:bg-slate-800 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400">
+                <i class="fas fa-credit-card mb-2 text-lg"></i>
+                <div class="text-xs font-bold">Credit Card</div>
+            </label>
+            <div class="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full hidden peer-checked:block shadow-[0_0_10px_#3b82f6]"></div>
+        </div>
+        <div class="relative opacity-60">
+            <input type="radio" name="payment" id="pay-upi" class="peer hidden" disabled>
+            <label for="pay-upi" class="block cursor-not-allowed bg-slate-900/30 border border-slate-700 p-4 rounded-lg text-center text-slate-500">
+                <i class="fas fa-qrcode mb-2 text-lg"></i>
+                <div class="text-xs font-bold">UPI / NetBanking</div>
+            </label>
+        </div>
+    </div>
+</div>
 
                 <button type="submit" id="btn-submit" class="group w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.99] mt-4">
                     <span class="relative z-10 flex items-center justify-center gap-2">
@@ -155,89 +154,99 @@
         </div>
     </div>
 
-    <script>
-        // 1. Get Plan from URL
-        const params = new URLSearchParams(window.location.search);
-        const plan = params.get('plan') || 'essential';
+   <script>
+    // 1. Get Plan from URL
+    const params = new URLSearchParams(window.location.search);
+    let plan = params.get('plan');
 
-        // 2. Plan Details Database
-        const details = {
-            'essential': { name: 'Starter Plan', price: '₹999', period: '/mo' },
-            'pro': { name: 'Professional Plan', price: '₹2,499', period: '/mo' },
-            'enterprise': { name: 'Enterprise Plan', price: 'Contact Us', period: '' }
-        };
+    // Handle defaults and mappings (essential -> free)
+    if (!plan || plan === 'essential') plan = 'free';
+    if (plan === 'pro') plan = 'professional';
 
-        const selected = details[plan] || details['essential'];
+    // 2. Plan Details Database
+    const details = {
+        'free': { name: 'Starter Plan', price: '₹0', period: '/forever' },
+        'professional': { name: 'Professional Plan', price: '₹2,499', period: '/mo' },
+        'enterprise': { name: 'Enterprise Plan', price: 'Custom', period: '' }
+    };
+
+    // Fallback to free if invalid plan
+    const selected = details[plan] || details['free'];
+    
+    // Update UI Text
+    const nameEl = document.getElementById('plan-name');
+    const priceEl = document.getElementById('plan-price');
+    const paySection = document.getElementById('payment-section');
+    const freeMsg = document.getElementById('free-message');
+    
+    nameEl.innerText = selected.name;
+    priceEl.innerHTML = `${selected.price}<span class="text-base font-normal text-slate-400 ml-1">${selected.period}</span>`;
+
+    // Toggle Payment Section based on Plan
+    if (plan === 'free') {
+        paySection.classList.add('hidden');
+        freeMsg.classList.remove('hidden');
+    } else {
+        paySection.classList.remove('hidden');
+        freeMsg.classList.add('hidden');
+    }
+
+    // 3. Handle Form Submission
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        // Update UI with smooth fade
-        const nameEl = document.getElementById('plan-name');
-        const priceEl = document.getElementById('plan-price');
-        
-        nameEl.innerText = selected.name;
-        priceEl.innerHTML = `${selected.price}<span class="text-base font-normal text-slate-400 ml-1">${selected.period}</span>`;
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('btn-submit');
+        const alertEl = document.getElementById('alert-msg');
 
-        // 3. Handle Form Submission
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Loading State UI
+        const originalBtnText = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Creating Account...`;
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-wait');
+        alertEl.classList.add('hidden');
+
+        try {
+            const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
             
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('btn-submit');
-            const alertEl = document.getElementById('alert-msg');
+            const res = await fetch(`${API_ROOT}/signup`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                // We send the 'plan' variable which is now correctly set to 'free' or 'professional'
+                body: JSON.stringify({ name, email, password, plan })
+            });
 
-            // Loading State UI
-            const originalBtnText = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Processing Secure Payment...`;
-            btn.disabled = true;
-            btn.classList.add('opacity-75', 'cursor-wait');
-            alertEl.classList.add('hidden');
+            const data = await res.json();
 
-            try {
-                // Determine API URL (Use config or fallback)
-                const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
+            if (res.ok) {
+                // Success UI
+                alertEl.innerHTML = `<i class="fas fa-check-circle text-green-400 text-lg"></i> <span><strong>Success!</strong> Account created. Redirecting...</span>`;
+                alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-green-500/10 border-green-500/20 text-green-300 block";
                 
-                console.log(`🚀 Initiating handshake with: ${API_ROOT}`);
-
-                const res = await fetch(`${API_ROOT}/signup`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, email, password, plan })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    // Success UI
-                    alertEl.innerHTML = `<i class="fas fa-check-circle text-green-400 text-lg"></i> <span><strong>Success!</strong> Account created. Redirecting...</span>`;
-                    alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-green-500/10 border-green-500/20 text-green-300 block";
-                    
-                    // Store Authentication Token
-                    localStorage.setItem('authToken', data.token);
-                    localStorage.setItem('userEmail', email);
-                    
-                    // Redirect after delay
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
-                } else {
-                    throw new Error(data.message || data.error || "Registration rejected by server.");
-                }
-            } catch (err) {
-                console.error("Signup Error:", err);
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userEmail', email);
                 
-                // Error UI
-                alertEl.innerHTML = `<i class="fas fa-exclamation-triangle text-red-400 text-lg"></i> <span><strong>Error:</strong> ${err.message}</span>`;
-                alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-red-500/10 border-red-500/20 text-red-300 block";
-                
-                // Reset Button
-                btn.innerHTML = originalBtnText;
-                btn.disabled = false;
-                btn.classList.remove('opacity-75', 'cursor-wait');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+            } else {
+                throw new Error(data.message || data.error || "Registration rejected by server.");
             }
-        });
-    </script>
+        } catch (err) {
+            console.error("Signup Error:", err);
+            alertEl.innerHTML = `<i class="fas fa-exclamation-triangle text-red-400 text-lg"></i> <span><strong>Error:</strong> ${err.message}</span>`;
+            alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-red-500/10 border-red-500/20 text-red-300 block";
+            
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-wait');
+        }
+    });
+</script>
 </body>
 </html>
+
 
 
