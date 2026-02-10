@@ -895,20 +895,22 @@ async function checkRealTimeSafetyAlerts(data) {
         // ========================================
         // STEP 1: FETCH LIMITS (Including kVA & Lead PF)
         // ========================================
-        const res = await pool.query(`
-            SELECT 
-                d.device_name, 
-                d.v_ov, d.v_uv, d.v_imb,
-                d.i_oc, d.i_imb, d.i_neu, 
-                d.t_int, 
-                d.allotted_load, -- ✅ kVA Capacity (MD Limit)
-                d.pf_lag,        -- ✅ Min Lagging PF (e.g. 0.90)
-                d.pf_lead,       -- ✅ Min Leading PF (e.g. 0.95)
-                u.email as owner_email, u.preferences 
-            FROM devices d
-            JOIN users u ON d.user_id = u.id
-            WHERE d.device_id = $1
-        `, [deviceId]);
+        // ✅ NEW CODE (Paste this)
+const res = await pool.query(`
+    SELECT 
+        d.device_name, 
+        d.v_ov, d.v_uv, d.v_imb,
+        d.i_oc, d.i_imb, d.i_neu, 
+        d.t_int, 
+        d.allotted_load,
+        d.pf_lag,       
+        d.pf_lead,      
+        u.email as owner_email, u.preferences,
+        u.plan  -- <--- WE ADDED THIS
+    FROM devices d
+    JOIN users u ON d.user_id = u.id
+    WHERE d.device_id = $1
+`, [deviceId]);
 
         if (res.rows.length === 0) return;
 
@@ -1013,7 +1015,10 @@ async function checkRealTimeSafetyAlerts(data) {
             );
         }
         console.log(`⚠️ ${priorityFault.type} on ${deviceId}`);
-
+         const userPlan = res.rows[0].plan;
+if (userPlan === 'essential' || userPlan === 'free') {
+    return; // Stop here, do not send email
+}
         // Send Email
         if (enableAlerts && alertEmail) {
             const cooldownKey = `${deviceId}:${priorityFault.type}`;
