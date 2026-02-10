@@ -408,69 +408,75 @@
         </div>
     </section>
 
-    <section id="pricing" class="py-24 bg-dark-900 border-t border-slate-800">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16" data-aos="fade-up">
-                <h2 class="text-3xl font-bold text-white mb-4">Transparent Pricing</h2>
-                <div class="flex items-center justify-center gap-4">
-                    <span class="text-sm font-bold text-white">Monthly</span>
-                    <button id="billing-toggle" class="w-14 h-8 bg-slate-700 rounded-full p-1 transition-colors relative" onclick="togglePricing()">
-                        <div id="toggle-circle" class="w-6 h-6 bg-white rounded-full transition-transform transform translate-x-0 shadow-sm"></div>
-                    </button>
-                    <span class="text-sm font-bold text-slate-500">Yearly <span class="text-green-400 text-xs ml-1 font-normal bg-green-900/30 px-2 py-0.5 rounded-full">-20%</span></span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-                <div class="glass p-8 rounded-3xl border border-slate-700 hover:border-slate-500 transition-colors" data-aos="fade-up" data-aos-delay="0">
-                    <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest mb-4">Starter</h3>
-                    <div class="mb-6 h-16">
-                        <div class="text-4xl font-black text-white price-monthly">₹999</div>
-                        <div class="text-4xl font-black text-white price-yearly hidden">₹9,999</div>
-                        <span class="text-sm text-slate-500">per month</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-sm text-slate-300">
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> 1 Meter Connection</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Real-time Monitoring</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> 7-Day History</li>
-                    </ul>
-                    <a href="/signup.html?plan=essential" class="block text-center w-full py-3 rounded-lg border border-slate-600 hover:bg-slate-700 text-white font-bold transition-all">Select Plan</a>
-                </div>
-
-                <div class="p-8 bg-dark-800 rounded-3xl border-2 border-brand-500 relative shadow-[0_0_40px_rgba(14,165,233,0.15)] transform md:-translate-y-6" data-aos="fade-up" data-aos-delay="100">
-                    <div class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-xl uppercase tracking-wider">Best Value</div>
-                    <h3 class="text-brand-400 font-bold uppercase text-xs tracking-widest mb-4">Professional</h3>
-                    <div class="mb-6 h-16">
-                        <div class="text-5xl font-black text-white price-monthly">₹2,499</div>
-                        <div class="text-5xl font-black text-white price-yearly hidden">₹24,999</div>
-                        <span class="text-sm text-slate-500">per month</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-sm text-white">
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> 5 Meters</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> <strong class="text-white">Safety Email Alerts</strong></li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> 30-Day Retention</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> PDF Reports</li>
-                    </ul>
-                    <a href="/signup.html?plan=pro" class="block text-center w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all shadow-lg">Get Professional</a>
-                </div>
-
-                <div class="glass p-8 rounded-3xl border border-slate-700 hover:border-slate-500 transition-colors" data-aos="fade-up" data-aos-delay="200">
-                    <h3 class="text-purple-400 font-bold uppercase text-xs tracking-widest mb-4">Enterprise</h3>
-                    <div class="mb-6 h-16">
-                        <div class="text-4xl font-black text-white">Custom</div>
-                        <span class="text-sm text-slate-500">volume pricing</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-sm text-slate-300">
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Unlimited Meters</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Dedicated Server</li>
-                        <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> API Access</li>
-                    </ul>
-                    <a href="/signup.html?plan=enterprise" class="block text-center w-full py-3 rounded-lg border border-slate-600 hover:bg-slate-700 text-white font-bold transition-all">Contact Sales</a>
-                </div>
+<section id="pricing" class="py-24 bg-dark-900 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16" data-aos="fade-up">
+            <h2 class="text-3xl font-bold text-white mb-4">Transparent Pricing</h2>
+            <p class="text-slate-400 mb-8">Start for free. Upgrade for AI insights & safety automation.</p>
+            
+            <div class="flex items-center justify-center gap-4">
+                <span class="text-sm font-bold text-white">Monthly</span>
+                <button id="billing-toggle" class="w-14 h-8 bg-slate-700 rounded-full p-1 transition-colors relative focus:outline-none" onclick="togglePricing()">
+                    <div id="toggle-circle" class="w-6 h-6 bg-white rounded-full transition-transform transform translate-x-0 shadow-sm"></div>
+                </button>
+                <span class="text-sm font-bold text-slate-500">Yearly <span class="text-green-400 text-xs ml-1 font-normal bg-green-900/30 px-2 py-0.5 rounded-full">-20%</span></span>
             </div>
         </div>
-    </section>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            
+            <div class="glass p-8 rounded-3xl border border-slate-700 hover:border-slate-500 transition-colors" data-aos="fade-up" data-aos-delay="0">
+                <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-widest mb-4">Starter</h3>
+                <div class="mb-6 h-16">
+                    <div class="text-4xl font-black text-white price-monthly">₹0</div>
+                    <div class="text-4xl font-black text-white price-yearly hidden">₹0</div>
+                    <span class="text-sm text-slate-500">forever</span>
+                </div>
+                <ul class="space-y-4 mb-8 text-sm text-slate-300">
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 1 Meter Connection</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Real-time Dashboard</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 24-Hour History</li>
+                    <li class="flex gap-3 text-slate-600"><i data-lucide="x" class="w-4 h-4"></i> AI Energy Audit</li>
+                    <li class="flex gap-3 text-slate-600"><i data-lucide="x" class="w-4 h-4"></i> Safety Alerts</li>
+                </ul>
+                <a href="/signup.html?plan=free" class="block text-center w-full py-3 rounded-lg border border-slate-600 hover:bg-slate-700 text-white font-bold transition-all">Start for Free</a>
+            </div>
+
+            <div class="p-8 bg-dark-800 rounded-3xl border-2 border-brand-500 relative shadow-[0_0_40px_rgba(14,165,233,0.15)] transform md:-translate-y-6" data-aos="fade-up" data-aos-delay="100">
+                <div class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-xl uppercase tracking-wider">Best Value</div>
+                <h3 class="text-brand-400 font-bold uppercase text-xs tracking-widest mb-4">Professional</h3>
+                <div class="mb-6 h-16">
+                    <div class="text-5xl font-black text-white price-monthly">₹2,499</div>
+                    <div class="text-5xl font-black text-white price-yearly hidden">₹24,999</div>
+                    <span class="text-sm text-slate-500">per month</span>
+                </div>
+                <ul class="space-y-4 mb-8 text-sm text-white">
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> <strong>Up to 5 Meters</strong></li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> <strong class="text-white">AI Audit & Insights</strong></li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> <strong class="text-white">Safety Email Alerts</strong></li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> Daily Reports</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-brand-400"></i> 30-Day Retention</li>
+                </ul>
+                <a href="/signup.html?plan=professional" class="block text-center w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all shadow-lg">Get Professional</a>
+            </div>
+
+            <div class="glass p-8 rounded-3xl border border-slate-700 hover:border-slate-500 transition-colors" data-aos="fade-up" data-aos-delay="200">
+                <h3 class="text-purple-400 font-bold uppercase text-xs tracking-widest mb-4">Enterprise</h3>
+                <div class="mb-6 h-16">
+                    <div class="text-4xl font-black text-white">Custom</div>
+                    <span class="text-sm text-slate-500">volume pricing</span>
+                </div>
+                <ul class="space-y-4 mb-8 text-sm text-slate-300">
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Unlimited Meters</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Dedicated Server</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Raw API Access</li>
+                    <li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> 90-Day Retention</li>
+                </ul>
+                <a href="mailto:sales@nexusgrid.com" class="block text-center w-full py-3 rounded-lg border border-slate-600 hover:bg-slate-700 text-white font-bold transition-all">Contact Sales</a>
+            </div>
+        </div>
+    </div>
+</section>
     <footer class="bg-dark-950 pt-16 pb-8 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div class="col-span-1 md:col-span-2">
