@@ -110,16 +110,29 @@ function sanitizeTelemetryForBroadcast(rawData) {
         timestamp: new Date().toISOString()
     };
 }
-// ✅ CORRECT TRANSPORTER FOR RENDER
+// ✅ FORCE SECURE CONNECTION (No variables, just raw settings)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,        // Must be 465 to avoid ETIMEDOUT
-  secure: true,     // Must be true for port 465
+  port: 465,        // ✅ Hardcoded: Forces SSL
+  secure: true,     // ✅ Hardcoded: Required for 465
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // Your email
+    pass: process.env.EMAIL_PASS  // Your App Password
   },
-  connectionTimeout: 10000, // Wait 10 seconds before giving up
+  tls: {
+    // This helps if Render has issues with certificates
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000 // 10 seconds wait time
+});
+
+// Add this verification block to see if it connects on startup
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("❌ TRANSPORTER ERROR:", error);
+  } else {
+    console.log("✅ TRANSPORTER READY: Connected to Gmail 465");
+  }
 });
 
 let lastEmailSentTime = 0;
@@ -1023,14 +1036,29 @@ if (userPlan === 'essential' || userPlan === 'free') {
             const lastEmail = alertCooldowns.get(cooldownKey) || 0;
 
             if (now - lastEmail > ALERT_COOLDOWN_MS) {
-                const transporter = nodemailer.createTransport({
+        // ✅ FORCE SECURE CONNECTION (No variables, just raw settings)
+const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, 
+  port: 465,        // ✅ Hardcoded: Forces SSL
+  secure: true,     // ✅ Hardcoded: Required for 465
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // This MUST be a 16-char App Password
+    user: process.env.EMAIL_USER, // Your email
+    pass: process.env.EMAIL_PASS  // Your App Password
   },
+  tls: {
+    // This helps if Render has issues with certificates
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000 // 10 seconds wait time
+});
+
+// Add this verification block to see if it connects on startup
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("❌ TRANSPORTER ERROR:", error);
+  } else {
+    console.log("✅ TRANSPORTER READY: Connected to Gmail 465");
+  }
 });
 
                 await transporter.sendMail({
