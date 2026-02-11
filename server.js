@@ -1077,7 +1077,7 @@ transporter.verify(function (error, success) {
     } catch (err) {
         console.error('❌ Safety Engine Crash:', err.message);
     }
-}
+});
 
 app.post('/api/telemetry', validateTelemetry, async (req, res) => {
     const client = await pool.connect();
