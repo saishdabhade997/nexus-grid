@@ -518,7 +518,7 @@ app.post('/api/forgot-password', async (req, res) => {
              RETURNING id, email`,
             [token, email]
         );
-
+       const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=${token}`;
         // --- SECURITY: Don't reveal if email exists ---
         if (result.rows.length === 0) {
             console.log(`⚠️ Password reset requested for non-existent email: ${email}`);
