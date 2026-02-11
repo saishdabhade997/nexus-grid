@@ -1064,46 +1064,31 @@ if (userPlan === 'essential' || userPlan === 'free') {
     return; // Stop here, do not send email
 }
         // Send Email
-        if (enableAlerts && alertEmail) {
-            const cooldownKey = `${deviceId}:${priorityFault.type}`;
-            const lastEmail = alertCooldowns.get(cooldownKey) || 0;
+        // Send Email
+if (enableAlerts && alertEmail) {
+    const cooldownKey = `${deviceId}:${priorityFault.type}`;
+    const lastEmail = alertCooldowns.get(cooldownKey) || 0;
 
-            if (now - lastEmail > ALERT_COOLDOWN_MS) {
-        // ✅ FORCE SECURE CONNECTION (No variables, just raw settings)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,        // ✅ Hardcoded: Forces SSL
-  secure: true,     // ✅ Hardcoded: Required for 465
-  auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASS  // Your App Password
-  },
-  tls: {
-    // This helps if Render has issues with certificates
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 10000 // 10 seconds wait time
-});
+    if (now - lastEmail > ALERT_COOLDOWN_MS) {
+        await transporter.sendMail({
+            from: `"NexusGrid Safety" <${process.env.EMAIL_USER}>`,
+            to: alertEmail,
+            subject: `[${priorityFault.level}] ${priorityFault.type} Alert: ${deviceName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border-left: 4px solid #dc2626;">
+                    <h3 style="color: #dc2626;">⚠️ ${priorityFault.level} Alert</h3>
+                    <p><strong>Device:</strong> ${deviceName}</p>
+                    <p><strong>Issue:</strong> ${priorityFault.type}</p>
+                    <p><strong>Details:</strong> ${priorityFault.msg}</p>
+                    <p style="font-size: 12px; color: #666;">Timestamp: ${new Date().toLocaleString()}</p>
+                </div>
+            `
+        });
 
-// Add this verification block to see if it connects on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("❌ TRANSPORTER ERROR:", error);
-  } else {
-    console.log("✅ TRANSPORTER READY: Connected to Gmail 465");
-  }
-});
-
-                await transporter.sendMail({
-                    from: `"NexusGrid Safety" <${process.env.EMAIL_USER}>`,
-                    to: alertEmail,
-                    subject: `[${priorityFault.level}] ${priorityFault.type} Alert: ${deviceName}`,
-                    text: priorityFault.msg // Simplified text for brevity here, HTML is better
-                });
-
-                alertCooldowns.set(cooldownKey, now);
-            }
-        }
+        alertCooldowns.set(cooldownKey, now);
+        console.log(`📧 Alert email sent to ${alertEmail}`);
+    }
+}
 
     } catch (err) {
         console.error('❌ Safety Engine Crash:', err.message);
