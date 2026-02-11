@@ -26,10 +26,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ========================================
 // DATABASE CONNECTION
-// ========================================
-// ========================================
-// DATABASE CONNECTION (Render Compatible)
-// ========================================
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Render provides a single 'DATABASE_URL' variable
@@ -114,14 +110,16 @@ function sanitizeTelemetryForBroadcast(rawData) {
         timestamp: new Date().toISOString()
     };
 }
+// ✅ CORRECT TRANSPORTER FOR RENDER
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,       // CHANGE THIS TO 465
-  secure: true,    // CHANGE THIS TO TRUE (Critical for port 465)
+  port: 465,        // Must be 465 to avoid ETIMEDOUT
+  secure: true,     // Must be true for port 465
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // Wait 10 seconds before giving up
 });
 
 let lastEmailSentTime = 0;
