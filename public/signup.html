@@ -6,13 +6,10 @@
     <title>Secure Checkout | NexusGrid Enterprise</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-  <script src="js/config.js"></script>
+    <script src="js/config.js"></script>
 
     <style>
-        /* Custom Premium Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         .glass-panel {
@@ -34,7 +31,7 @@
         
         <div class="lg:col-span-2 p-8 bg-slate-900/80 border-r border-slate-700/50 flex flex-col relative">
             <div class="flex items-center gap-3 mb-8">
-                <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                     <i class="fas fa-bolt text-white text-sm"></i>
                 </div>
                 <span class="text-xl font-bold text-white tracking-tight">NexusGrid</span>
@@ -53,15 +50,11 @@
                 <ul class="space-y-4">
                     <li class="flex items-start gap-3 text-sm text-slate-300">
                         <i class="fas fa-check-circle text-blue-500 mt-0.5"></i>
-                        <span><strong>Instant Activation:</strong> Access your dashboard immediately after checkout.</span>
+                        <span><strong>Instant Activation:</strong> Access your dashboard immediately.</span>
                     </li>
                     <li class="flex items-start gap-3 text-sm text-slate-300">
                         <i class="fas fa-shield-alt text-blue-500 mt-0.5"></i>
-                        <span><strong>Bank-Grade Security:</strong> 256-bit SSL encryption for all data streams.</span>
-                    </li>
-                    <li class="flex items-start gap-3 text-sm text-slate-300">
-                        <i class="fas fa-headset text-blue-500 mt-0.5"></i>
-                        <span><strong>Priority Support:</strong> Direct access to our engineering team.</span>
+                        <span><strong>Secure Link:</strong> Data encrypted via 256-bit SSL.</span>
                     </li>
                 </ul>
             </div>
@@ -70,7 +63,7 @@
                 <div class="flex justify-between items-end">
                     <div>
                         <p class="text-xs text-slate-500 mb-1">Total due today</p>
-                        <p class="text-xs text-slate-500">Includes all taxes</p>
+                        <p id="tax-label" class="text-xs text-slate-500">Includes all taxes</p>
                     </div>
                     <p id="plan-price" class="text-3xl font-bold text-white tracking-tight">--</p>
                 </div>
@@ -78,120 +71,118 @@
         </div>
 
         <div class="lg:col-span-3 p-8 md:p-10 bg-slate-800/30 glass-panel">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-2xl font-bold text-white">Create Account</h2>
-                <div class="flex gap-2">
-                    <i class="fab fa-cc-visa text-2xl text-slate-500"></i>
-                    <i class="fab fa-cc-mastercard text-2xl text-slate-500"></i>
-                    <i class="fab fa-cc-amex text-2xl text-slate-500"></i>
-                </div>
-            </div>
+            <h2 class="text-2xl font-bold text-white mb-8">Create Account</h2>
             
             <div id="alert-msg" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3"></div>
 
             <form id="signup-form" class="space-y-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 group-focus-within:text-blue-400 transition-colors">Full Name</label>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Full Name</label>
                         <div class="relative">
-                            <i class="fas fa-user absolute left-3 top-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors"></i>
+                            <i class="fas fa-user absolute left-3 top-3.5 text-slate-500"></i>
                             <input type="text" id="name" required placeholder="John Doe" 
-                                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                         </div>
                     </div>
                     
                     <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 group-focus-within:text-blue-400 transition-colors">Work Email</label>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Work Email</label>
                         <div class="relative">
-                            <i class="fas fa-envelope absolute left-3 top-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors"></i>
+                            <i class="fas fa-envelope absolute left-3 top-3.5 text-slate-500"></i>
                             <input type="email" id="email" required placeholder="name@company.com" 
-                                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                         </div>
                     </div>
                 </div>
 
                 <div class="group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2 group-focus-within:text-blue-400 transition-colors">Set Secure Password</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Set Secure Password</label>
                     <div class="relative">
-                        <i class="fas fa-lock absolute left-3 top-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors"></i>
+                        <i class="fas fa-lock absolute left-3 top-3.5 text-slate-500"></i>
                         <input type="password" id="password" required minlength="6" placeholder="••••••••••••" 
-                            class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                            class="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-1 ml-1">Must be at least 6 characters.</p>
                 </div>
-                <div id="payment-section" class="pt-6 border-t border-slate-700/50">
-    <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Select Payment Method</label>
-    <div class="grid grid-cols-2 gap-3">
-        <div class="relative">
-            <input type="radio" name="payment" id="pay-card" class="peer hidden" checked>
-            <label for="pay-card" class="block cursor-pointer bg-slate-900/50 border border-slate-600 p-4 rounded-lg text-center hover:bg-slate-800 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400">
-                <i class="fas fa-credit-card mb-2 text-lg"></i>
-                <div class="text-xs font-bold">Credit Card</div>
-            </label>
-            <div class="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full hidden peer-checked:block shadow-[0_0_10px_#3b82f6]"></div>
-        </div>
-        <div class="relative opacity-60">
-            <input type="radio" name="payment" id="pay-upi" class="peer hidden" disabled>
-            <label for="pay-upi" class="block cursor-not-allowed bg-slate-900/30 border border-slate-700 p-4 rounded-lg text-center text-slate-500">
-                <i class="fas fa-qrcode mb-2 text-lg"></i>
-                <div class="text-xs font-bold">UPI / NetBanking</div>
-            </label>
-        </div>
-    </div>
-</div>
 
-                <button type="submit" id="btn-submit" class="group w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.99] mt-4">
-                    <span class="relative z-10 flex items-center justify-center gap-2">
-                        Complete Order & Access Dashboard <i class="fas fa-arrow-right text-sm group-hover:translate-x-1 transition-transform"></i>
-                    </span>
-                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <div id="payment-section" class="pt-6 border-t border-slate-700/50 hidden">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Select Payment Method</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <input type="radio" name="payment" id="pay-card" class="peer hidden" checked>
+                            <label for="pay-card" class="block cursor-pointer bg-slate-900/50 border border-slate-600 p-4 rounded-lg text-center hover:bg-slate-800 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400">
+                                <i class="fas fa-credit-card mb-2 text-lg"></i>
+                                <div class="text-xs font-bold">Credit Card</div>
+                            </label>
+                        </div>
+                        <div class="relative opacity-60">
+                            <input type="radio" name="payment" id="pay-upi" class="peer hidden" disabled>
+                            <label for="pay-upi" class="block cursor-not-allowed bg-slate-900/30 border border-slate-700 p-4 rounded-lg text-center text-slate-500">
+                                <i class="fas fa-qrcode mb-2 text-lg"></i>
+                                <div class="text-xs font-bold">UPI (Soon)</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="free-message" class="hidden pt-6 border-t border-slate-700/50">
+                    <div class="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Free Starter:</strong> No payment required. Complete setup to start monitoring.
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.99] mt-4">
+                    <span id="btn-text">Complete Order & Access Dashboard</span>
                 </button>
 
                 <p class="text-center text-xs text-slate-500 mt-4">
-                    By confirming, you agree to our <a href="#" class="text-blue-400 hover:underline">Terms of Service</a>.
+                    By confirming, you agree to our <a href="#" class="text-blue-400 hover:underline">Terms</a>.
                 </p>
             </form>
         </div>
     </div>
 
-   <script>
+<script>
     // 1. Get Plan from URL
     const params = new URLSearchParams(window.location.search);
-    let plan = params.get('plan');
+    let plan = params.get('plan') || 'free';
 
-    // Handle defaults and mappings (essential -> free)
-    if (!plan || plan === 'essential') plan = 'free';
+    // Map plan aliases
+    if (plan === 'essential') plan = 'free';
     if (plan === 'pro') plan = 'professional';
 
-    // 2. Plan Details Database
+    // 2. UI Elements
+    const nameEl = document.getElementById('plan-name');
+    const priceEl = document.getElementById('plan-price');
+    const paySection = document.getElementById('payment-section');
+    const freeMsg = document.getElementById('free-message');
+    const taxLabel = document.getElementById('tax-label');
+
     const details = {
         'free': { name: 'Starter Plan', price: '₹0', period: '/forever' },
         'professional': { name: 'Professional Plan', price: '₹2,499', period: '/mo' },
         'enterprise': { name: 'Enterprise Plan', price: 'Custom', period: '' }
     };
 
-    // Fallback to free if invalid plan
     const selected = details[plan] || details['free'];
     
-    // Update UI Text
-    const nameEl = document.getElementById('plan-name');
-    const priceEl = document.getElementById('plan-price');
-    const paySection = document.getElementById('payment-section');
-    const freeMsg = document.getElementById('free-message');
-    
+    // 3. Update UI Text
     nameEl.innerText = selected.name;
     priceEl.innerHTML = `${selected.price}<span class="text-base font-normal text-slate-400 ml-1">${selected.period}</span>`;
 
-    // Toggle Payment Section based on Plan
+    // 4. Toggle Visibility Logic (Safe version)
     if (plan === 'free') {
         paySection.classList.add('hidden');
         freeMsg.classList.remove('hidden');
+        taxLabel.innerText = "No payment required";
     } else {
         paySection.classList.remove('hidden');
         freeMsg.classList.add('hidden');
+        taxLabel.innerText = "Includes all taxes";
     }
 
-    // 3. Handle Form Submission
+    // 5. Form Logic
     document.getElementById('signup-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -199,54 +190,47 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const btn = document.getElementById('btn-submit');
+        const btnText = document.getElementById('btn-text');
         const alertEl = document.getElementById('alert-msg');
 
-        // Loading State UI
-        const originalBtnText = btn.innerHTML;
-        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Creating Account...`;
+        // Loading State
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-wait');
+        btnText.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Creating Account...`;
         alertEl.classList.add('hidden');
 
         try {
+            // Using internal global config or fallback
             const API_ROOT = window.API_URL || "https://nexusgrid-api.onrender.com/api";
             
             const res = await fetch(`${API_ROOT}/signup`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                // We send the 'plan' variable which is now correctly set to 'free' or 'professional'
                 body: JSON.stringify({ name, email, password, plan })
             });
 
             const data = await res.json();
 
             if (res.ok) {
-                // Success UI
-                alertEl.innerHTML = `<i class="fas fa-check-circle text-green-400 text-lg"></i> <span><strong>Success!</strong> Account created. Redirecting...</span>`;
+                alertEl.innerHTML = `<i class="fas fa-check-circle text-green-400"></i> Success! Redirecting...`;
                 alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-green-500/10 border-green-500/20 text-green-300 block";
                 
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userEmail', email);
                 
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 2000);
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
             } else {
-                throw new Error(data.message || data.error || "Registration rejected by server.");
+                throw new Error(data.error || data.message || "Registration failed.");
             }
         } catch (err) {
-            console.error("Signup Error:", err);
-            alertEl.innerHTML = `<i class="fas fa-exclamation-triangle text-red-400 text-lg"></i> <span><strong>Error:</strong> ${err.message}</span>`;
+            alertEl.innerHTML = `<i class="fas fa-exclamation-triangle text-red-400"></i> ${err.message}`;
             alertEl.className = "mb-6 p-4 rounded-lg text-sm font-medium border flex items-center gap-3 bg-red-500/10 border-red-500/20 text-red-300 block";
             
-            btn.innerHTML = originalBtnText;
             btn.disabled = false;
             btn.classList.remove('opacity-75', 'cursor-wait');
+            btnText.innerText = "Complete Order & Access Dashboard";
         }
     });
 </script>
 </body>
 </html>
-
-
-
