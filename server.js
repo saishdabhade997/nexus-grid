@@ -502,40 +502,62 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 // 1. Request Password Reset (REAL EMAIL VERSION)
+// 1. Request Password Reset (FIXED - NO SYNTAX ERRORS)
 app.post('/api/forgot-password', async (req, res) => {
     const { email } = req.body;
 
-    if (!email) return res.status(400).json({ error: "Email is required" });
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
 
     try {
-        // --- RATE LIMITING ---
+        console.log(`🔑 Password reset requested for: ${email}`);
+
+        // --- RATE LIMITING (FIXED LOGIC) ---
         const checkCooldown = await pool.query(
-            `SELECT reset_expires FROM users WHERE email = $1 AND reset_expires > NOW() + INTERVAL '45 minutes'`, 
+            `SELECT reset_expires FROM users 
+             WHERE email = $1 
+             AND reset_expires > NOW()`, 
             [email]
         );
+
         if (checkCooldown.rows.length > 0) {
-            return res.status(429).json({ error: "Please wait 15 minutes before requesting another link." });
+            const expiresAt = new Date(checkCooldown.rows[0].reset_expires);
+            const minutesLeft = Math.ceil((expiresAt - new Date()) / 60000);
+            
+            console.log(`⏳ Rate limit: User must wait ${minutesLeft} more minutes`);
+            return res.status(429).json({ 
+                error: `Please wait ${minutesLeft} minutes before requesting another link.` 
+            });
         }
 
         // --- GENERATE TOKEN & SAVE ---
-        const token = crypto.randomBytes(20).toString('hex');
+        const token = crypto.randomBytes(32).toString('hex');
+        
         const result = await pool.query(
-            `UPDATE users SET reset_token = $1, reset_expires = NOW() + INTERVAL '1 hour' WHERE email = $2 RETURNING id`,
+            `UPDATE users 
+             SET reset_token = $1, reset_expires = NOW() + INTERVAL '1 hour' 
+             WHERE email = $2 
+             RETURNING id, email`,
             [token, email]
         );
 
+        // --- SECURITY: Don't reveal if email exists ---
         if (result.rows.length === 0) {
-            return res.json({ message: "If that email exists, we sent a secure link." });
+            console.log(`⚠️ Password reset requested for non-existent email: ${email}`);
+            return res.json({ 
+                message: "If that email exists in our system, we've sent a reset link." 
+            });
         }
 
-        // --- SEND REAL EMAIL ---
-      // 👇 Use your real Render URL here
-const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=${token}`;
+        // --- CONSTRUCT RESET LINK ---
+        const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=${token}`;
 
+        // --- SEND EMAIL ---
         const mailOptions = {
             from: `"NexusGrid Security" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: '🔒 Reset Your Password',
+            subject: '🔒 Reset Your Password - NexusGrid',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
                     <h2 style="color: #0ea5e9; text-align: center;">NexusGrid Password Reset</h2>
@@ -543,28 +565,37 @@ const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=
                     <p style="color: #334155;">We received a request to reset your password. Click the button below to proceed:</p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetLink}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+                        <a href="${resetLink}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
                     </div>
                     
-                    <p style="color: #64748b; font-size: 12px; text-align: center;">This link expires in 1 hour. If you did not request this, please ignore this email.</p>
+                    <p style="color: #334155; margin-top: 20px;">Or copy this link:</p>
+                    <p style="color: #64748b; font-size: 12px; word-break: break-all;">${resetLink}</p>
+                    
+                    <p style="color: #64748b; font-size: 12px; text-align: center; margin-top: 30px;">This link expires in 1 hour. If you did not request this, please ignore this email.</p>
                 </div>
             `
         };
 
-        // This sends the actual email via Gmail
         await transporter.sendMail(mailOptions);
         
-        console.log(`✅ Email sent successfully to ${email}`);
-        res.json({ message: "If that email exists, we sent a secure link." });
-        } catch (err) {
-    console.error("❌ CRITICAL EMAIL ERROR:", err);
-    // ✅ Sends the REAL error details to your browser
-    res.status(500).json({ 
-        error: err.message, 
-        code: err.code, 
-        details: "CHECK THIS MESSAGE TO FIX IT" 
-    });
-}
+        console.log(`✅ Password reset email sent to ${email}`);
+        res.json({ 
+            message: "If that email exists in our system, we've sent a reset link." 
+        });
+
+    } catch (err) {
+        console.error("❌ PASSWORD RESET ERROR:", err);
+        console.error("Error Code:", err.code);
+        console.error("Error Message:", err.message);
+        
+        // ✅ Detailed error for debugging (remove in production)
+        res.status(500).json({ 
+            error: err.message, 
+            code: err.code,
+            hint: "Check server logs for details"
+        });
+    }
+}); // ✅ PROPER CLOSING BRACE
 // 5. ADMIN: BLOCK/UNBLOCK USER
 app.put('/api/admin/users/:id/block', authenticateToken, requireAdmin, async (req, res) => {
     const { id } = req.params;
