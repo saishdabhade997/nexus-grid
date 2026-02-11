@@ -556,13 +556,15 @@ const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=
         
         console.log(`✅ Email sent successfully to ${email}`);
         res.json({ message: "If that email exists, we sent a secure link." });
-
-    } catch (err) {
-        console.error("Email Send Error:", err);
-        // Don't tell the user the email failed (security), just log it
-        res.status(500).json({ error: "Server error processing request" });
-    }
-});
+        } catch (err) {
+    console.error("❌ CRITICAL EMAIL ERROR:", err);
+    // ✅ Sends the REAL error details to your browser
+    res.status(500).json({ 
+        error: err.message, 
+        code: err.code, 
+        details: "CHECK THIS MESSAGE TO FIX IT" 
+    });
+}
 // 5. ADMIN: BLOCK/UNBLOCK USER
 app.put('/api/admin/users/:id/block', authenticateToken, requireAdmin, async (req, res) => {
     const { id } = req.params;
