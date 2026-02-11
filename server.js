@@ -773,7 +773,7 @@ app.put('/api/admin/users/:id/password', authenticateToken, requireAdmin, async 
 /* ============================================================
    ✅ AUTH ROUTE: REGISTER (Updated for Premium Page)
    ============================================================ */
-app.post('/api/signup', async (req, res) => {
+/*app.post('/api/signup', async (req, res) => {
     const { name, email, password, plan } = req.body;
 
     // 1. Basic Validation
@@ -834,7 +834,7 @@ app.post('/api/signup', async (req, res) => {
 
         res.status(500).json({ error: "Registration failed" });
     }
-});
+});*/
 // 6. DELETE Device (Unclaim/Remove meter)
 app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
