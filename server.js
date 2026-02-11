@@ -9,7 +9,8 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 const cron = require('node-cron');
 const app = express();
 app.use(express.json());
@@ -110,31 +111,6 @@ function sanitizeTelemetryForBroadcast(rawData) {
         timestamp: new Date().toISOString()
     };
 }
-// ✅ FORCE SECURE CONNECTION (No variables, just raw settings)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Must be false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2' 
-  },
-  connectionTimeout: 15000, // Increased to 15s for stability
-  greetingTimeout: 10000
-});
-
-// Verify connection on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("❌ EMAIL TRANSPORTER ERROR:", error.message);
-  } else {
-    console.log("✅ EMAIL READY: Gmail connected via port 587");
-  }
-});
 
 let lastEmailSentTime = 0;
 let isProcessingAlert = false;
@@ -552,37 +528,30 @@ app.post('/api/forgot-password', async (req, res) => {
         }
 
         // --- CONSTRUCT RESET LINK ---
-        const resetLink = `https://nexusgrid-api.onrender.com/reset-password.html?token=${token}`;
-
-        // --- SEND EMAIL ---
-        const mailOptions = {
-            from: `"NexusGrid Security" <${process.env.EMAIL_USER}>`,
+        // ✅ PASTE THIS NEW RESEND BLOCK
+        const { data, error } = await resend.emails.send({
+            from: 'NexusGrid Security <onboarding@resend.dev>',
             to: email,
             subject: '🔒 Reset Your Password - NexusGrid',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
                     <h2 style="color: #0ea5e9; text-align: center;">NexusGrid Password Reset</h2>
-                    <p style="color: #334155;">Hello,</p>
-                    <p style="color: #334155;">We received a request to reset your password. Click the button below to proceed:</p>
-                    
+                    <p>Hello, we received a request to reset your password. Click the button below to proceed:</p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${resetLink}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
                     </div>
-                    
-                    <p style="color: #334155; margin-top: 20px;">Or copy this link:</p>
-                    <p style="color: #64748b; font-size: 12px; word-break: break-all;">${resetLink}</p>
-                    
-                    <p style="color: #64748b; font-size: 12px; text-align: center; margin-top: 30px;">This link expires in 1 hour. If you did not request this, please ignore this email.</p>
+                    <p style="color: #64748b; font-size: 12px; text-align: center;">This link expires in 1 hour.</p>
                 </div>
             `
-        };
-
-        await transporter.sendMail(mailOptions);
-        
-        console.log(`✅ Password reset email sent to ${email}`);
-        res.json({ 
-            message: "If that email exists in our system, we've sent a reset link." 
         });
+
+        if (error) {
+            console.error("❌ Resend API Error:", error);
+            return res.status(500).json({ error: "Email delivery failed" });
+        }
+
+        console.log(`✅ Reset email sent to ${email} via Resend API`);
+        res.json({ message: "If that email exists, we've sent a reset link." });
 
     } catch (err) {
         console.error("❌ PASSWORD RESET ERROR:", err);
@@ -1064,30 +1033,30 @@ const res = await pool.query(`
 if (userPlan === 'essential' || userPlan === 'free') {
     return; // Stop here, do not send email
 }
-        // Send Email
-        // Send Email
+     // ✅ REPLACE THE EMAIL PART OF THE SAFETY ENGINE WITH THIS:
 if (enableAlerts && alertEmail) {
     const cooldownKey = `${deviceId}:${priorityFault.type}`;
     const lastEmail = alertCooldowns.get(cooldownKey) || 0;
 
     if (now - lastEmail > ALERT_COOLDOWN_MS) {
-        await transporter.sendMail({
-            from: `"NexusGrid Safety" <${process.env.EMAIL_USER}>`,
+        await resend.emails.send({
+            from: 'NexusGrid Safety <onboarding@resend.dev>',
             to: alertEmail,
             subject: `[${priorityFault.level}] ${priorityFault.type} Alert: ${deviceName}`,
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border-left: 4px solid #dc2626;">
+                <div style="font-family: sans-serif; padding: 20px; border-left: 4px solid #dc2626; background: #fef2f2;">
                     <h3 style="color: #dc2626;">⚠️ ${priorityFault.level} Alert</h3>
                     <p><strong>Device:</strong> ${deviceName}</p>
                     <p><strong>Issue:</strong> ${priorityFault.type}</p>
                     <p><strong>Details:</strong> ${priorityFault.msg}</p>
-                    <p style="font-size: 12px; color: #666;">Timestamp: ${new Date().toLocaleString()}</p>
+                    <hr>
+                    <p style="font-size: 11px; color: #666;">NexusGrid Real-Time Monitor - ${new Date().toLocaleString()}</p>
                 </div>
             `
         });
 
         alertCooldowns.set(cooldownKey, now);
-        console.log(`📧 Alert email sent to ${alertEmail}`);
+        console.log(`📧 Alert email sent to ${alertEmail} via Resend`);
     }
 }
 
@@ -1707,14 +1676,17 @@ cron.schedule('* * * * *', async () => {
                 `;
 
                 // 6. Send Email
-                await transporter.sendMail({
-                    from: `"NexusGrid Reports" <${process.env.EMAIL_USER || 'YOUR_EMAIL'}>`,
-                    to: schedule.email,
-                    subject: `📊 ${reportType} Energy Report - ${now.toLocaleDateString()}`,
-                    html: emailHtml
-                });
+               
 
-                console.log(`🚀 ${reportType} report sent to ${schedule.email} (Schedule ID: ${schedule.id}, Section: ${schedule.section})`);
+                // ✅ REPLACE THE REPORT EMAIL BLOCK WITH THIS:
+await resend.emails.send({
+    from: 'NexusGrid Reports <onboarding@resend.dev>',
+    to: schedule.email,
+    subject: `📊 ${reportType} Energy Report - ${now.toLocaleDateString()}`,
+    html: emailHtml
+});
+
+console.log(`🚀 ${reportType} report sent to ${schedule.email} via Resend API`);
 
             } catch (scheduleErr) {
                 // Log error but don't crash - continue processing other schedules
