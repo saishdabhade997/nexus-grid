@@ -113,25 +113,26 @@ function sanitizeTelemetryForBroadcast(rawData) {
 // ✅ FORCE SECURE CONNECTION (No variables, just raw settings)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,        // ✅ Hardcoded: Forces SSL
-  secure: true,     // ✅ Hardcoded: Required for 465
+  port: 587,
+  secure: false, // Must be false for 587
   auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASS  // Your App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   },
   tls: {
-    // This helps if Render has issues with certificates
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2' 
   },
-  connectionTimeout: 10000 // 10 seconds wait time
+  connectionTimeout: 15000, // Increased to 15s for stability
+  greetingTimeout: 10000
 });
 
-// Add this verification block to see if it connects on startup
+// Verify connection on startup
 transporter.verify(function (error, success) {
   if (error) {
-    console.log("❌ TRANSPORTER ERROR:", error);
+    console.log("❌ EMAIL TRANSPORTER ERROR:", error.message);
   } else {
-    console.log("✅ TRANSPORTER READY: Connected to Gmail 465");
+    console.log("✅ EMAIL READY: Gmail connected via port 587");
   }
 });
 
