@@ -1099,7 +1099,8 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
      
         
             // Send Data Packet
-        const broadcastData ={ sanitizeTelemetryForBroadcast(data);
+        const broadcastData ={
+            ...sanitizeTelemetryForBroadcast(data),
             device_id: deviceId,
             spectrum: spectrum,
             kFactor: kFactor,
