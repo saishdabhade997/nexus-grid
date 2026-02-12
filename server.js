@@ -1048,7 +1048,7 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         
         const data = req.body;
         const deviceId = data.deviceId || data.device_id; // MUST EXIST
-        
+        const spectrum = data.spectrum || [];
         // 1. Validation: Reject anonymous data
         if (!deviceId) {
             throw new AppError('Device ID is missing from packet', 400);
