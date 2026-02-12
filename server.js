@@ -837,6 +837,18 @@ async function checkRealTimeSafetyAlerts(data) {
         const pf = parseFloat(data.power_factor || 1.0);
         const kva = parseFloat(data.apparent_power || 0); // ✅ Total Load
         const temp = parseFloat(data.meter_temperature || 0);
+        // ✅ NEW: EXTRACT HARMONICS
+        const vThdMax = Math.max(
+            parseFloat(data.v_thd_r || 0), 
+            parseFloat(data.v_thd_y || 0), 
+            parseFloat(data.v_thd_b || 0)
+        );
+        const iThdMax = Math.max(
+            parseFloat(data.i_thd_r || 0), 
+            parseFloat(data.i_thd_y || 0), 
+            parseFloat(data.i_thd_b || 0)
+        );
+        
 
         if (!deviceId || kva === 0) return;
 
@@ -878,6 +890,9 @@ const res = await pool.query(`
             max_kva: parseFloat(row.allotted_load || 500), // Transformer Capacity
             pf_min_lag: parseFloat(row.pf_lag || 0.90),    // Efficiency Floor
             pf_min_lead: parseFloat(row.pf_lead || 0.95)   // Capacitive Limit
+            // ✅ IEEE 519 Standard Limits
+            thd_v_limit: 5.0,  // Voltage distortion > 5% is CRITICAL
+            thd_i_limit: 15.0  // Current distortion > 15% is WARNING
         };
 
         const prefs = row.preferences || {};
@@ -943,7 +958,33 @@ const res = await pool.query(`
 
         // 6. TEMP
         if (temp > limits.t_int) faults.push({ type: 'TEMP', level: 'DANGER', msg: `Overheating: ${temp.toFixed(1)}°C` });
+      // ✅ 7. NEW: HARMONIC DISTORTION (IEEE 519)
+        // Only run this check if the user is on a paid plan
+        if (row.plan !== 'free' && row.plan !== 'essential') {
+            if (vThdMax > limits.thd_v_limit) {
+                faults.push({ 
+                    type: 'THD_V_HIGH', 
+                    level: 'CRITICAL', 
+                    msg: `Dirty Power: Voltage THD ${vThdMax.toFixed(1)}% > 5% (IEEE 519 Violation)` 
+                });
+                
+                // Broadcast specifically for the "Violation Log" on the Dashboard
+                io.emit('new_violation', {
+                    timestamp: new Date().toISOString(),
+                    type: 'VOLTAGE_THD',
+                    value: `${vThdMax.toFixed(1)}%`,
+                    device_id: deviceId
+                });
+            }
 
+            if (iThdMax > limits.thd_i_limit) {
+                faults.push({ 
+                    type: 'THD_I_HIGH', 
+                    level: 'WARNING', 
+                    msg: `Harmonic Noise: Current THD ${iThdMax.toFixed(1)}%` 
+                });
+            }
+        }
         // ========================================
         // STEP 3: ALERTING (No Changes Needed Here)
         // ========================================
@@ -1027,10 +1068,12 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
                 device_id, voltage_r, voltage_y, voltage_b, v_thd_r, v_thd_y, v_thd_b,
                 current_r, current_y, current_b, current_n, i_thd_r, i_thd_y, i_thd_b,
                 active_power, apparent_power, reactive_power, power_factor, frequency,
-                energy_kwh, energy_kvah, energy_kvarh, meter_temperature
+                energy_kwh, energy_kvah, energy_kvarh, meter_temperature,
+                harmonic_spectrum, k_factor, crest_factor -- ✅ NEW COLUMNS
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21, $22, $23
+                $15, $16, $17, $18, $19, $20, $21, $22, $23,
+                $24, $25, $26
             )
         `;
         
@@ -1043,20 +1086,30 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
             data.active_power || 0, data.apparent_power || 0, data.reactive_power || 0,
             data.power_factor || 0, data.frequency || 50.0,
             data.energy_kwh || 0, data.energy_kvah || 0, data.energy_kvarh || 0,
-            data.meter_temperature || 0
+            data.meter_temperature || 0,
+            JSON.stringify(spectrum), // $24
+            kFactor,                  // $25
+            data.crest_factor || 1.41 // $26
         ];
         
         await client.query(telemetryQuery, telemetryValues);
         await client.query('COMMIT');
 
         // --- PART 6: ALERTS (Non-Blocking) ---
-        checkRealTimeSafetyAlerts(data).catch(e => console.error("Safety Check Error", e));
+     
         
             // Send Data Packet
-        const broadcastData = sanitizeTelemetryForBroadcast(data);
+        const broadcastData ={ sanitizeTelemetryForBroadcast(data);
+            device_id: deviceId,
+            spectrum: spectrum,
+            kFactor: kFactor,
+            crest_factor: data.crest_factor || 1.41}
+        
+         
         broadcastData.device_id = deviceId; // Ensure ID is correct
 
         io.emit('new-data', broadcastData);
+          checkRealTimeSafetyAlerts(broadcastData).catch(e => console.error("Safety Check Error", e));
 
         res.json({ status: 'success', device: deviceId });
 
