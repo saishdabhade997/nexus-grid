@@ -1052,10 +1052,10 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         const specY = data.spectrum_y || []; 
         const specB = data.spectrum_b || [];
         let kFactor = 1.0;
-        if (spectrum.length > 0) {
+        if (specR.length > 0) {
             let numerator = 0;
             let denominator = 0;
-            spectrum.forEach((mag, i) => {
+            specR.forEach((mag, i) => {
                 const order = i + 1;
                 numerator += Math.pow(order, 2) * Math.pow(mag, 2);
                 denominator += Math.pow(mag, 2);
