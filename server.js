@@ -1048,7 +1048,9 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         
         const data = req.body;
         const deviceId = data.deviceId || data.device_id; // MUST EXIST
-        const spectrum = data.spectrum || [];
+        const specR = data.spectrum_r || []; 
+        const specY = data.spectrum_y || []; 
+        const specB = data.spectrum_b || [];
         let kFactor = 1.0;
         if (spectrum.length > 0) {
             let numerator = 0;
@@ -1083,12 +1085,13 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
                 device_id, voltage_r, voltage_y, voltage_b, v_thd_r, v_thd_y, v_thd_b,
                 current_r, current_y, current_b, current_n, i_thd_r, i_thd_y, i_thd_b,
                 active_power, apparent_power, reactive_power, power_factor, frequency,
+                harmonic_spectrum_r, harmonic_spectrum_y, harmonic_spectrum_b,
                 energy_kwh, energy_kvah, energy_kvarh, meter_temperature,
-                harmonic_spectrum, k_factor, crest_factor -- ✅ NEW COLUMNS
+                , k_factor, crest_factor -- ✅ NEW COLUMNS
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
                 $15, $16, $17, $18, $19, $20, $21, $22, $23,
-                $24, $25, $26
+                $24, $25, $26,$27, $28
             )
         `;
         
@@ -1102,7 +1105,7 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
             data.power_factor || 0, data.frequency || 50.0,
             data.energy_kwh || 0, data.energy_kvah || 0, data.energy_kvarh || 0,
             data.meter_temperature || 0,
-            JSON.stringify(spectrum), // $24
+        JSON.stringify(specR), JSON.stringify(specY), JSON.stringify(specB), // ✅ SAVE ALL 3
             kFactor,                  // $25
             data.crest_factor || 1.41 // $26
         ];
@@ -1117,7 +1120,9 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         const broadcastData ={
             ...sanitizeTelemetryForBroadcast(data),
             device_id: deviceId,
-            spectrum: spectrum,
+          spectrum_r: specR, // ✅ SEND R
+            spectrum_y: specY, // ✅ SEND Y
+            spectrum_b: specB, // ✅ SEND B
             kFactor: kFactor,
             crest_factor: data.crest_factor || 1.41}
         
