@@ -889,7 +889,7 @@ const res = await pool.query(`
             // ✅ THE MISSING PARAMETERS
             max_kva: parseFloat(row.allotted_load || 500), // Transformer Capacity
             pf_min_lag: parseFloat(row.pf_lag || 0.90),    // Efficiency Floor
-            pf_min_lead: parseFloat(row.pf_lead || 0.95)   // Capacitive Limit
+            pf_min_lead: parseFloat(row.pf_lead || 0.95),   // Capacitive Limit
             // ✅ IEEE 519 Standard Limits
             thd_v_limit: 5.0,  // Voltage distortion > 5% is CRITICAL
             thd_i_limit: 15.0  // Current distortion > 15% is WARNING
