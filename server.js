@@ -1049,6 +1049,21 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         const data = req.body;
         const deviceId = data.deviceId || data.device_id; // MUST EXIST
         const spectrum = data.spectrum || [];
+        let kFactor = 1.0;
+        if (spectrum.length > 0) {
+            let numerator = 0;
+            let denominator = 0;
+            spectrum.forEach((mag, i) => {
+                const order = i + 1;
+                numerator += Math.pow(order, 2) * Math.pow(mag, 2);
+                denominator += Math.pow(mag, 2);
+            });
+            // Avoid division by zero
+            kFactor = denominator !== 0 ? (numerator / denominator) : 1.0;
+        }
+
+        // 3. Define Crest Factor (Safe Default)
+        const crest_factor = data.crest_factor || 1.41;
         // 1. Validation: Reject anonymous data
         if (!deviceId) {
             throw new AppError('Device ID is missing from packet', 400);
