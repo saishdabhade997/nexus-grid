@@ -1124,9 +1124,9 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
             data.i_thd_r || 0, data.i_thd_y || 0, data.i_thd_b || 0,
             data.active_power || 0, data.apparent_power || 0, data.reactive_power || 0,
             data.power_factor || 0, data.frequency || 50.0,
+            JSON.stringify(specR), JSON.stringify(specY), JSON.stringify(specB), // ✅ SAVE ALL 3
             data.energy_kwh || 0, data.energy_kvah || 0, data.energy_kvarh || 0,
             data.meter_temperature || 0,
-        JSON.stringify(specR), JSON.stringify(specY), JSON.stringify(specB), // ✅ SAVE ALL 3
             kFactor,                  // $25
             data.crest_factor || 1.41 // $26
         ];
