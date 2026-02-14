@@ -1164,21 +1164,18 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
     }
 });
 // GET the latest harmonic data for a specific device
-// WHY WE NEED ':deviceId': To know WHICH meter's data to fetch (e.g., meter_001 vs factory_main)
+// GET /api/telemetry/latest/:deviceId
 app.get('/api/telemetry/latest/:deviceId', async (req, res) => {
     try {
-        const { deviceId } = req.params; // Grabs the ID from the URL
+        const { deviceId } = req.params; 
         
-        // WHY WE NEED THIS QUERY:
-        // 1. SELECT ...: We pick specific columns (R, Y, B spectrums) to save bandwidth.
-        // 2. ORDER BY timestamp DESC: We want the NEWEST data first.
-        // 3. LIMIT 1: We only need the single most recent "Live" snapshot, not the whole history.
         const result = await pool.query(`
             SELECT 
-                harmonic_spectrum_r, 
-                harmonic_spectrum_y, 
-                harmonic_spectrum_b,
+                harmonic_spectrum_r, harmonic_spectrum_y, harmonic_spectrum_b,
                 v_thd_r, v_thd_y, v_thd_b,
+                i_thd_r, i_thd_y, i_thd_b,  -- ✅ ADDED THESE 3 LINES
+                k_factor,      
+                crest_factor, 
                 timestamp
             FROM telemetry
             WHERE device_id = $1
@@ -1190,7 +1187,7 @@ app.get('/api/telemetry/latest/:deviceId', async (req, res) => {
             return res.status(404).json({ error: 'No data found' });
         }
 
-        res.json(result.rows[0]); // Send the JSON back to the browser
+        res.json(result.rows[0]); 
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
