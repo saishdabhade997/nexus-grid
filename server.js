@@ -1108,7 +1108,7 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
                 active_power, apparent_power, reactive_power, power_factor, frequency,
                 harmonic_spectrum_r, harmonic_spectrum_y, harmonic_spectrum_b,
                 energy_kwh, energy_kvah, energy_kvarh, meter_temperature,
-                , k_factor, crest_factor -- ✅ NEW COLUMNS
+                 k_factor, crest_factor -- ✅ NEW COLUMNS
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
                 $15, $16, $17, $18, $19, $20, $21, $22, $23,
