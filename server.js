@@ -1051,40 +1051,38 @@ app.post('/api/telemetry', validateTelemetry, async (req, res) => {
         const specR = data.spectrum_r || []; 
         const specY = data.spectrum_y || []; 
         const specB = data.spectrum_b || [];
+    // ---------------------------------------------------------
+        // CALCULATE K-FACTOR (Corrected Logic)
+        // ---------------------------------------------------------
         let kFactor = 1.0;
-        if (specR.length > 0) {
-            // 1. DEFINE HELPER FUNCTION (Calculates K-Factor for one array)
-      const calculateK = (spectrum) => {
-            // Safety: If no spectrum, return safe value 1.0
+
+        // 1. Define Helper Function
+        const calculateK = (spectrum) => {
             if (!spectrum || !Array.isArray(spectrum) || spectrum.length === 0) {
                 return 1.0;
             }
 
-            // ✅ CRITICAL FIX: Declare variables BEFORE the loop starts
             let numerator = 0;
-            let denominator = 0; 
+            let denominator = 0;
 
             spectrum.forEach((mag, i) => {
-                const order = i + 1; // 1st, 2nd, 3rd harmonic...
-                
+                const order = i + 1; // Harmonic Order (1st, 2nd...)
                 // Formula: Sum(Order^2 * Mag^2) / Sum(Mag^2)
                 numerator += Math.pow(order, 2) * Math.pow(mag, 2);
                 denominator += Math.pow(mag, 2);
             });
 
-            // Avoid division by zero
             return denominator !== 0 ? (numerator / denominator) : 1.0;
         };
 
-        // 2. CALCULATE FOR ALL 3 PHASES
-        const kR = calculateK(specR);
-        const kY = calculateK(specY);
-        const kB = calculateK(specB);
+        // 2. Run calculation only if we have data
+        if (specR.length > 0 || specY.length > 0 || specB.length > 0) {
+            const kR = calculateK(specR);
+            const kY = calculateK(specY);
+            const kB = calculateK(specB);
 
-        // 3. SET THE FINAL K-FACTOR (The Worst/Highest of the three)
-        let kFactor = Math.max(kR, kY, kB);
-            // Avoid division by zero
-            kFactor = denominator !== 0 ? (numerator / denominator) : 1.0;
+            // 3. Pick the worst case
+            kFactor = Math.max(kR, kY, kB);
         }
 
         // 3. Define Crest Factor (Safe Default)
