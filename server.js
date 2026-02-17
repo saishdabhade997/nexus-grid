@@ -1810,12 +1810,12 @@ app.post('/api/admin/assign-device', authenticateToken, requireAdmin, async (req
 
 app.post('/api/ai-audit',authenticateToken, async (req, res) => {
     try {
-        if (req.user.plan !== 'professional' && req.user.plan !== 'enterprise') {
-            return res.status(403).json({ 
-                error: "Upgrade Required", 
-                message: "AI Audits are only available on the Professional Plan." 
-            });
-        }
+        // if (req.user.plan !== 'professional' && req.user.plan !== 'enterprise') {
+        //     return res.status(403).json({ 
+        //         error: "Upgrade Required", 
+        //         message: "AI Audits are only available on the Professional Plan." 
+        //     });
+        // }
         const { metrics, billing } = req.body;
 
         // 1. Construct a lean prompt (Save tokens/money)
