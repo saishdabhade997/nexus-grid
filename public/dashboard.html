@@ -1425,6 +1425,38 @@ button:not(:disabled):active {
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Samples</p>
                 <p id="total-count" class="text-3xl font-bold text-cyan-400 font-mono mb-1">0</p>
             </div>
+          <div class="mt-8 mb-8">
+    <div class="glass-card p-1 rounded-2xl border border-indigo-500/30 bg-indigo-900/5">
+        <div class="p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                         AI Energy Auditor
+                        <span class="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1 rounded-full uppercase shadow-lg shadow-indigo-500/30 tracking-wider">
+                            Professional Plan
+                        </span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Analyzes the data shown above to detect penalties and inefficiencies.
+                    </p>
+                </div>
+                
+                <button onclick="generateAIAudit()" id="btn-generate-ai" class="group relative overflow-hidden bg-white text-indigo-900 text-xs font-black py-3 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] hover:scale-105 active:scale-95 uppercase tracking-widest cursor-pointer">
+                    <span class="relative z-10 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Run Analysis
+                    </span>
+                </button>
+            </div>
+
+            <div id="ai-results-container" class="min-h-[100px] rounded-xl bg-[#0B0E14]/80 border border-white/5 p-6 flex flex-col justify-center items-center transition-all">
+                <div class="text-center opacity-40">
+                    <p class="text-xs font-mono uppercase tracking-widest text-slate-500">System Standby. Click "Run Analysis".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         </div>
   <!-- Replace the existing pagination div in the Reports tab -->
 <div class="glass-card rounded-2xl shadow-2xl border border-slate-800/50 flex flex-col" style="height: 700px;">
