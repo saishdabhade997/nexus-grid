@@ -22,9 +22,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/favicon.ico', (req, res) => {
     res.status(204).end(); // No Content - tells browser to stop requesting
 });
-const OpenAI = require('openai');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 // ========================================
 // DATABASE CONNECTION
 const isProduction = process.env.NODE_ENV === 'production';
@@ -1808,57 +1805,61 @@ app.post('/api/admin/assign-device', authenticateToken, requireAdmin, async (req
     }
 });
 
-app.post('/api/ai-audit',authenticateToken, async (req, res) => {
+// ==========================================
+// 🤖 FREE AI AUDIT (Using Google Gemini via Fetch)
+// ==========================================
+app.post('/api/ai-audit', authenticateToken, async (req, res) => {
     try {
-        // if (req.user.plan !== 'professional' && req.user.plan !== 'enterprise') {
-        //     return res.status(403).json({ 
-        //         error: "Upgrade Required", 
-        //         message: "AI Audits are only available on the Professional Plan." 
-        //     });
-        // }
         const { metrics, billing } = req.body;
+        
+        // 1. Get the Key (Make sure you added GEMINI_API_KEY to Render!)
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 
-        // 1. Construct a lean prompt (Save tokens/money)
+        if (!GEMINI_API_KEY) {
+            console.error("Missing Gemini API Key");
+            return res.json({ insights: [
+                "1. System Config Error: API Key missing.",
+                "2. Please check server environment variables.",
+                "3. Contact Admin."
+            ]});
+        }
+
+        // 2. Build the Prompt
         const prompt = `
-        You are a Senior Industrial Energy Auditor. Analyze this factory telemetry data and provide 4 strict, technical recommendations.
-        
-        DATA CONTEXT:
-        - Avg Power Factor: ${metrics.pf?.avg || 'N/A'} (Target: 0.99)
-        - Peak Demand (MD): ${billing?.peakDemand || 0} kVA (Limit: ${billing?.contractDemand || 500} kVA)
-        - Voltage Stability: Avg ${metrics.voltage?.avg || 0}V (StdDev: ${metrics.voltage?.stdDev || 0})
-        - Total Energy: ${billing?.totalEnergy || 0} kWh
-
-        OUTPUT FORMAT:
-        Return exactly 3 sentences labeled 1, 2, 3. No intro. No markdown.
-        1. Peak Demand specific advice.
-        2. Power Factor specific advice.
-        3. Voltage/Quality specific advice.
-        
+        You are an Energy Auditor. Analyze this data and give 3 short technical recommendations.
+        Data: Power Factor ${metrics.pf?.avg || 0.95}, Peak Demand ${billing?.peakDemand || 0} kVA (Limit 500).
+        Format: Return exactly 3 numbered sentences.
         `;
 
-        // 2. Call GPT-4o-mini (Fast & Cheap) or GPT-4
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "system", content: prompt }],
-            model: "gpt-4o-mini", 
-            max_tokens: 150,
-            temperature: 0.5,
+        // 3. Send Request (Native Node.js Fetch - No Library Needed)
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
         });
 
-        const rawText = completion.choices[0].message.content;
+        const data = await response.json();
+
+        // 4. Extract Text
+        // Gemini returns a specific JSON structure, we dig into it here:
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
         
-        // 3. Clean up formatting to array
-        const insights = rawText.split('\n').filter(line => line.length > 10);
-        
+        // 5. Format for Frontend
+        const insights = rawText.split('\n')
+            .map(line => line.replace(/\*/g, '').trim()) // Remove bolding
+            .filter(line => line.length > 5)
+            .slice(0, 3);
+
         res.json({ insights });
 
     } catch (error) {
-        console.error("AI Error:", error);
-        // Fallback if AI fails (e.g., quota exceeded)
+        console.error("Gemini Error:", error);
         res.json({ insights: [
-            "1. Peak Demand: Server connection for AI analysis timed out.",
-            "2. Power Factor: Unable to retrieve real-time inference.",
-            "3. Voltage Profile: Standard monitoring recommended.",
-            "4. Efficiency: Review manual logs for shift optimization."
+            "1. AI Service Unavailable.",
+            "2. Please try again later.",
+            "3. Manual review recommended."
         ]});
     }
 });
