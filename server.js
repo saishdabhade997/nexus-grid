@@ -1808,7 +1808,7 @@ app.post('/api/admin/assign-device', authenticateToken, requireAdmin, async (req
     }
 });
 
-app.post('/api/ai-audit', async (req, res) => {
+app.post('/api/ai-audit',authenticateToken, async (req, res) => {
     try {
         if (req.user.plan !== 'professional' && req.user.plan !== 'enterprise') {
             return res.status(403).json({ 
