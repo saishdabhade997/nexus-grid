@@ -214,7 +214,90 @@ function toggleAlarmView(view) {
 }
 
 
- 
+ // ==========================================
+// 🤖 AI ENERGY AUDITOR LOGIC
+// ==========================================
+async function generateAIAudit() {
+    const btn = document.getElementById('btn-generate-ai');
+    const container = document.getElementById('ai-results-container');
+    
+    // 1. Safety Check: Do elements exist?
+    if (!btn || !container) {
+        console.error("AI Elements not found in DOM");
+        return;
+    }
+
+    // 2. Lock Button & Show Loading Animation
+    btn.disabled = true;
+    container.innerHTML = `
+        <div class="flex flex-col items-center gap-3 animate-pulse py-4">
+            <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs font-mono text-indigo-400 uppercase tracking-widest">Analyzing Telemetry...</p>
+        </div>
+    `;
+
+    try {
+        // 3. Helper to scrape numbers from HTML
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            // Removes "kVA", "kWh", etc., keeps only numbers and dots
+            return el ? parseFloat(el.innerText.replace(/[^0-9.]/g, '')) || 0 : 0;
+        };
+        
+        // 4. Prepare Data Payload
+        const payload = {
+            billing: {
+                peakDemand: getVal('report-peak-md'),
+                totalEnergy: getVal('report-total-kwh'),
+                contractDemand: 500 // You can fetch this from a setting later
+            },
+            metrics: {
+                pf: { avg: getVal('report-avg-pf') },
+                voltage: { avg: 230, stdDev: 0 } // Default assumption if chart data isn't ready
+            }
+        };
+
+        // 5. Send to Server
+        const response = await fetch('/api/ai-audit', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}` 
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // 6. Display Results
+        if (data.insights && data.insights.length > 0) {
+            container.innerHTML = `<div class="grid gap-3 w-full text-left animate-in fade-in slide-in-from-bottom-2 duration-500">` + 
+                data.insights.map(text => `
+                    <div class="flex gap-4 items-start p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-indigo-500/50 transition-colors">
+                        <span class="mt-0.5 text-lg"></span>
+                        <p class="text-sm text-slate-300 leading-relaxed font-medium">${text}</p>
+                    </div>
+                `).join('') + 
+            `</div>`;
+        } else {
+            throw new Error("No insights returned");
+        }
+
+    } catch (err) {
+        console.error("AI Error:", err);
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <p class="text-red-400 text-xs font-bold uppercase tracking-widest">❌ Analysis Failed</p>
+                <p class="text-[10px] text-slate-500 mt-1">Server may be busy or unreachable.</p>
+            </div>
+        `;
+    } finally {
+        btn.disabled = false; // Unlock button
+    }
+}
+
+// ✅ IMPORTANT: Make function global so HTML onclick works
+window.generateAIAudit = generateAIAudit;
 /* ====== SOCKET.IO LISTENERS ====== */
 function startLiveStream() {
   try {
@@ -1013,5 +1096,6 @@ window.switchMeter = function(newId) {
     console.groupEnd();
 
 };
+
 
 
