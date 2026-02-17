@@ -288,7 +288,9 @@ async function generateAIAudit() {
         container.innerHTML = `
             <div class="text-center py-4">
                 <p class="text-red-400 text-xs font-bold uppercase tracking-widest">❌ Analysis Failed</p>
-                <p class="text-[10px] text-slate-500 mt-1">Server may be busy or unreachable.</p>
+                <p class="text-xs text-slate-300 mt-2 bg-red-900/30 p-2 rounded border border-red-500/30">
+                    ${err.message}
+                </p>
             </div>
         `;
     } finally {
@@ -1096,6 +1098,7 @@ window.switchMeter = function(newId) {
     console.groupEnd();
 
 };
+
 
 
 
